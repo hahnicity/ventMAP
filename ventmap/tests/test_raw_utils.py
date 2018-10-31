@@ -1,7 +1,7 @@
 from nose.tools import assert_list_equal, assert_raises, eq_
 
-from algorithms.raw_utils import extract_raw, extract_raw_speedup, real_time_extractor
-from algorithms.tests.constants import (
+from ventmap.raw_utils import extract_raw, extract_raw_speedup, real_time_extractor
+from ventmap.tests.constants import (
     ARDS_AND_COPD,
     JIMMY_TEST,
     MALFORMED_BREATH,

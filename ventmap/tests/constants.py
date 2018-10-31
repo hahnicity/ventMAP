@@ -24,3 +24,7 @@ SPEEDUP_NULL_COLS_ERROR_CASE = NO_BOILERPLATE("speedup-null-breath-data-error-ca
 SPEEDUP_MULTI_BAD_FIRST_LINES_ERROR_CASE = NO_BOILERPLATE("speedup-multi-bad-first-lines-error-case.csv.test")
 SPEEDUP_EMPTY_FILE_ERROR_CASE = NO_BOILERPLATE("speedup-empty-file-error-case.csv.test")
 SPEEDUP_BE_ERROR_CASE = NO_BOILERPLATE("speedup-no-be-last-row-error-case.csv.test")
+PT0149_CSV = join(dirname(__file__), "samples", "0149_2016-02-17-08-38-13_1.csv_test")
+PT0149_SUBDIR = join(dirname(__file__), "samples", "0149")
+PT0149_BREATH_META = join(PT0149_SUBDIR, "0149_2016-02-17-08-38-13_1_v5_1_0__breath_meta.csv_test")
+PT0149_BREATH_META_200TO300 = join(dirname(__file__), "samples", "0149_2016-02-17-08-38-13_1_v5_1_0__breath_meta.csv_test")

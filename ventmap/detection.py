@@ -31,9 +31,6 @@ def detect_version(first):
     return  BScol, ncol, timestamp
 
 
-
-
-
 def detect_version_v2(first):
     """
     detect timestamp

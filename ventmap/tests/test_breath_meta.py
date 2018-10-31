@@ -4,10 +4,10 @@ from os.path import dirname, join
 from nose.tools import assert_list_equal, eq_
 import pandas as pd
 
-from algorithms.breath_meta import get_file_breath_meta, get_file_experimental_breath_meta, get_production_breath_meta
-from algorithms.constants import META_HEADER, META_HEADER_TOR_3
-from algorithms.raw_utils import extract_raw, extract_raw_speedup
-from algorithms.tests.constants import (
+from ventmap.breath_meta import get_file_breath_meta, get_file_experimental_breath_meta, get_production_breath_meta
+from ventmap.constants import META_HEADER, META_HEADER_TOR_3
+from ventmap.raw_utils import extract_raw, extract_raw_speedup
+from ventmap.tests.constants import (
     BREATH_META1,
     BREATH_META1_CONTROL,
     JIMMY_TEST,
@@ -19,8 +19,8 @@ from algorithms.tests.constants import (
     WITH_TIMESTAMP,
     WITH_TIMESTAMP_CONTROL
 )
-from utilikilt.custom_compare import assert_dfs_equal
-from algorithms.rounding_rules import force_round_df, IE_recalc_with_rounding, force_round_df2
+from ventmap.tests.custom_compare import assert_dfs_equal
+from ventmap.rounding_rules import force_round_df, IE_recalc_with_rounding, force_round_df2
 
 
 def perform_rounding(df):
