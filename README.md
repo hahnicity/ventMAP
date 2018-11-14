@@ -13,6 +13,7 @@ contributions to support addition of other ventilators as well.
 ### Basics
 For reading ventilator data:
 
+```python
     from ventmap.raw_utils import extract_raw
 
     # create generator that will iterate through file. Specify False to ensure that
@@ -22,6 +23,7 @@ For reading ventilator data:
     for breath in generator:
         # breath data is output in dictionary format
         flow, pressure = breath['flow'], breath['pressure']
+```
 
 For extracting metadata (I-Time, TVe, TVi) from files.
 
