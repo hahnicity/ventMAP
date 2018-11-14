@@ -4,9 +4,73 @@ Open source multi-purpose ventilator analytics library for use analyzing ventila
 Currently only data output from the Purittan Bennet 840 (PB-840) is supported, but we welcome
 contributions to support addition of other ventilators as well.
 
+## Motivation
+
+So you've been collecting data from some ventilators in your hospital or wherever, and you
+want to analyze it. So you want to go from having a bunch of flow and pressure observations
+and move to having some actionable information. Something similar to what this image is showing:
+
+![](img/basic-vent-data.png)
+
+If this is your problem, then ventMAP is the platform that you need. The purpose of this README
+is to give basics on how to use ventMAP. The rest on how to use the information is up to you.
+
 ## Install
 
     pip install ventmap
+
+## Data Format
+Raw ventilator data needs to be formatted in an expected way in order for our software to read it.
+The following section describes how our software can understand ventilator data for the following
+ventilators:
+
+### PB-840
+PB-840 data should be in the following format
+
+    <breath1 start datetime stamp>
+    BS, S:<vent BN 1>
+    <breath info>
+    BE
+    <breath2 start datetime stamp>
+    BS, S:<vent BN 2>
+
+Example:
+
+    2016-12-15-11-54-58.672431
+    BS, S:15428,
+    2.56, 12.94
+    4.20, 12.96
+    7.37, 13.11
+    17.18, 13.80
+    30.18, 14.91
+    44.12, 16.80
+    58.95, 19.03
+    67.63, 21.94
+    69.67, 25.05
+    56.72, 28.04
+    50.02, 28.38
+    45.57, 27.94
+    44.99, 27.20
+    45.53, 26.90
+    44.35, 26.86
+    43.82, 26.90
+    ...
+    BE
+    2016-12-15-11-55-04.972431
+    BS, S:15429,
+    4.34, 12.81
+    4.64, 12.78
+    8.99, 12.89
+    19.83, 13.62
+    31.61, 14.97
+    47.10, 16.95
+    ...
+    BE
+    ...
+
+If there is no timestamp above the breaths then the software will use relative time counting
+from 0 from the start of the file as a timestamp. The downside of this is that ventilator
+data cannot actually be temporally linked with other types of patient data in the future.
 
 ## API
 
