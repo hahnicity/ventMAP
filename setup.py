@@ -14,6 +14,7 @@ setup(name='ventmap',
       ],
       entry_points={
           'console_scripts': [
+              'clear_null_bytes=ventmap.clear_null_bytes:main',
               'cut_breath_section=ventmap.cut_breath_section:main',
               'breath_meta=ventmap.breath_meta:main',
           ]

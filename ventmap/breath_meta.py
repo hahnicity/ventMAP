@@ -25,28 +25,21 @@ def write_breath_meta(array, outfile):
         writer.writerows(array)
 
 
-def get_file_breath_meta(file, tve_pos=True, ignore_missing_bes=True, rel_bn_interval=[], vent_bn_interval=[]):
+def get_file_breath_meta(file, tve_pos=True, ignore_missing_bes=True, rel_bn_interval=[], vent_bn_interval=[], to_data_frame=False):
     return _get_file_breath_meta(
         get_production_breath_meta, file, tve_pos, ignore_missing_bes,
         rel_bn_interval, vent_bn_interval
     )
 
 
-def get_file_experimental_breath_meta(file, tve_pos=True, ignore_missing_bes=True, rel_bn_interval=[], vent_bn_interval=[]):
+def get_file_experimental_breath_meta(file, tve_pos=True, ignore_missing_bes=True, rel_bn_interval=[], vent_bn_interval=[], to_data_frame=False):
     return _get_file_breath_meta(
         get_experimental_breath_meta, file, tve_pos, ignore_missing_bes,
         rel_bn_interval, vent_bn_interval
     )
 
-def get_file_sbt_breath_meta(file, tve_pos=True, ignore_missing_bes=True, rel_bn_interval=[], vent_bn_interval=[]):
-    return _get_file_breath_meta(
-        get_sbt_breath_meta, file, tve_pos, ignore_missing_bes,
-        rel_bn_interval, vent_bn_interval
-    )
 
-
-def _get_file_breath_meta(func, file, tve_pos, ignore_missing_bes,
-    rel_bn_interval, vent_bn_interval):
+def _get_file_breath_meta(func, file, tve_pos, ignore_missing_bes, rel_bn_interval, vent_bn_interval, to_data_frame):
     if isinstance(file, str):
         file = open(file)
     if "experimental" in func.__name__:
@@ -64,7 +57,11 @@ def _get_file_breath_meta(func, file, tve_pos, ignore_missing_bes,
             return array
 
         array.append(func(breath))
-    return array
+
+    if not to_data_frame:
+        return array
+    else:
+        return pd.DataFrame(array[1:], columns=array[0])
 
 
 def get_production_breath_meta(breath, tve_pos=True, calc_tv3=False):
