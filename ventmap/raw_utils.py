@@ -228,119 +228,6 @@ def extract_raw(descriptor,
             idx += 1
 
 
-def extract_raw_speedup(descriptor, ignore_missing_bes, spec_rel_bns=[]):
-    """
-    Faster version of our csv reader that is mostly backwards compatible with
-    extract_raw.
-
-    :param descriptor: File descriptor to read
-    :param ignore_missing_bes: Whether or not we should ignore missing BE markers
-    """
-    try:
-        filename = descriptor.name
-    except AttributeError:
-        filename = type(descriptor)
-    descriptor = clear_descriptor_null_bytes(descriptor)
-    data = descriptor.read()
-    data = re.sub(r'BS, S:([0-9]+),\n', r'BS,\1\n', data)
-    data = re.sub('BE\n', 'BE,\n', data)
-    stringio = StringIO(data)
-    first_line = stringio.readline()
-    bs_time = 0.02
-
-    # Should we be more strict and now allow breaths without a TS up top?
-    #
-    # XXX 3 column data fails on this method
-    bs_col, ncol, ts_1st_col, ts_1st_row = detect_version_v2(first_line)
-
-    if ts_1st_row:
-        start_time = datetime.strptime(first_line.strip('\r\n'), IN_DATETIME_FORMAT)
-    else:
-        stringio.seek(0)
-        start_time = None
-
-    if not data:
-        raise StopIteration
-
-    line_adv = 0
-    line_adv_max = 20
-    while line_adv < line_adv_max:
-        try:
-            data = pd.read_csv(stringio, header=None, usecols=(0, 1)).values
-            break
-        except (pd.errors.ParserError, ValueError):  # first line is probably bad
-            line_adv += 1
-            stringio.seek(0)
-            if ts_1st_row:
-                stringio.readline()
-            for _ in range(line_adv):
-                stringio.readline()
-        except pd.errors.EmptyDataError:
-            raise StopIteration
-
-    if line_adv == line_adv_max:
-        raise Exception("When reading file too many malformed initial lines were found in file: {}".format(filename))
-
-    bs_idx = np.where(data[:,0] == 'BS')[0]
-    be_idx = np.where(data[:,0] == 'BE')[0]
-    if len(be_idx) == 0 and not ignore_missing_bes:
-        raise StopIteration
-
-    be_adv = 0
-    matches = []
-    for i, ii in enumerate(bs_idx[:-1]):
-        if be_idx[be_adv] < ii:
-            be_adv += 1
-            for be in be_idx[be_adv+1:]:
-                if be < ii:
-                    be_adv += 1
-                else:
-                    break
-        if be_idx[be_adv] < bs_idx[i+1]:
-            matches.append((ii, be_idx[be_adv]))
-            be_adv += 1
-        # XXX this won't really work if there are no BE's in the entire file
-        elif be_idx[be_adv] > bs_idx[i+1] and ignore_missing_bes:
-            matches.append((ii, bs_idx[i+1]))
-
-    if be_adv < len(be_idx) and be_idx[be_adv] > bs_idx[-1]:
-        matches.append((bs_idx[-1], be_idx[be_adv]))
-
-    for rel_bn, match in enumerate(matches):
-        try:
-            arr = data[match[0]+1:match[1]].astype(np.float)
-        except ValueError:
-            to_del = []
-            for i, row in enumerate(data[match[0]+1:match[1]]):
-                try:
-                    row.astype(np.float)
-                except ValueError:
-                    to_del.append(i)
-            arr = np.delete(data[match[0]+1:match[1]], to_del, axis=0).astype(np.float)
-        mask = np.any(np.isnan(arr), axis=1)
-        arr = arr[~mask]
-        if len(arr) == 0:
-            continue
-
-        vent_bn = int(data[match[0],1])
-        frame_dur = len(arr) * .02
-        abs_bs = (start_time + timedelta(seconds=bs_time)).strftime(OUT_DATETIME_FORMAT) if start_time else None
-        if spec_rel_bns and rel_bn + 1 not in spec_rel_bns:
-            continue
-        yield {
-            'rel_bn': rel_bn + 1,
-            'vent_bn': vent_bn,
-            'frame_dur': round(frame_dur, 2),
-            'flow': list(arr[:,0]),
-            'pressure': list(arr[:,1]),
-            'bs_time': bs_time,
-            't': list((np.arange(len(arr)) * .02).round(2)),
-            'abs_bs': abs_bs,
-            'dt': 0.02,
-        }
-        bs_time = round(bs_time + frame_dur, 2)
-
-
 def real_time_extractor(descriptor,
                         ignore_missing_bes,
                         rel_bn_interval=[],
@@ -634,3 +521,67 @@ def bs_be_denoting_extractor(descriptor, rel_bn_interval=[]):
         )
 
     return extract_raw(StringIO(data), False, rel_bn_interval=rel_bn_interval)
+
+
+def process_breath_file(descriptor,
+                        ignore_missing_bes,
+                        output_filename,
+                        rel_bn_interval=[],
+                        vent_bn_interval=[],
+                        spec_rel_bns=[],
+                        spec_vent_bns=[]):
+    """
+    Performs similar action to extract_raw but also requires an output filename to be
+    designated. This filename will serve as storage for two files to be output. First
+    a file of all the raw data from a file in simple linear format. Second a file with
+    some basic metadata information of the breath including how to access it in the procesed
+    file
+    """
+    generator = extract_raw(descriptor, ignore_missing_bes, rel_bn_interval, vent_bn_interval, spec_rel_bns, spec_vent_bns)
+    cur_idx = 0
+    raw_filename = output_filename + '.raw.npy'
+    proc_filename = output_filename + '.processed.npy'
+    # for raw it will be structured as flow,pressure
+    # for processed it will be structured as 'rel_bn', 'vent_bn', 'abs_bs', 'bs_time', 'frame_dur', 'dt', 'start_idx', 'end_idx'
+    flow = []
+    pressure = []
+    processed_rows = []
+    for breath in generator:
+        timestamp = None if not breath['ts'] else breath['ts'][0]
+        processed_row = [breath['rel_bn'], breath['vent_bn'], timestamp, breath['bs_time'], breath['frame_dur'], breath['dt'], cur_idx]
+        for i, val in enumerate(breath['flow']):
+            flow.append(breath['flow'][i])
+            pressure.append(breath['pressure'][i])
+            cur_idx += 1
+        processed_row.append(cur_idx)
+        processed_rows.append(processed_row)
+    np.save(proc_filename, processed_rows)
+    np.save(raw_filename, np.array([flow, pressure]).transpose())
+
+
+def read_processed_file(raw_file, processed_file):
+    """
+    After a file has been processed into its constituent parts, this function will then
+    re-read it and output it in similar format to extract_raw
+    """
+    raw = np.load(raw_file)
+    processed = np.load(processed_file)
+    for breath_info in processed:
+        # for processed it will be structured as 'rel_bn', 'vent_bn', 'abs_bs', 'bs_time', 'frame_dur', 'dt', 'start_idx', 'end_idx'
+        end_idx = int(breath_info[-1])
+        start_idx = int(breath_info[-2])
+        raw_breath_data = raw[start_idx:end_idx]
+        dt = float(breath_info[-3])
+        bs_time = float(breath_info[3])
+        abs_bs = breath_info[2]
+        # The output here is slightly different because we are just simplifying keys
+        yield {
+            "rel_bn": int(breath_info[0]),
+            "vent_bn": int(breath_info[1]),
+            "flow": raw_breath_data[:,0],
+            "pressure": raw_breath_data[:,1],
+            "abs_bs": abs_bs,
+            "bs_time": bs_time,
+            "frame_dur": float(breath_info[-4]),
+            "dt": dt,
+        }

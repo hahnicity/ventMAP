@@ -1,11 +1,14 @@
-from nose.tools import assert_list_equal, assert_raises, eq_
+import os
 
-from ventmap.raw_utils import extract_raw, extract_raw_speedup, real_time_extractor
+from nose.tools import assert_dict_equal, assert_list_equal, assert_raises, eq_
+
+from ventmap.raw_utils import extract_raw, process_breath_file, read_processed_file, real_time_extractor
 from ventmap.tests.constants import (
     ARDS_AND_COPD,
     JIMMY_TEST,
     MALFORMED_BREATH,
     RAW_UTILS_TEST,
+    RAW_UTILS_TEST2,
     RAW_UTILS_3_COLUMNS_TEST,
     REAL_TIME_TEST,
     SPEEDUP_BAD_ROW_ERROR_CASE,
@@ -110,55 +113,35 @@ def test_extract_raw_list():
             assert breath[var]
 
 
-def extract_raw_speedup_helper(filename):
-    f = open(filename)
-    f2 = open(filename)
-    gen = extract_raw(f, False)
-    gen2 = extract_raw_speedup(f2, False)
-
-    for slow_breath in gen:
-        fast_breath = gen2.next()
-        eq_(slow_breath['rel_bn'], fast_breath['rel_bn'])
-        eq_(slow_breath['vent_bn'], fast_breath['vent_bn'])
-        eq_(slow_breath['frame_dur'], fast_breath['frame_dur'])
-        assert_list_equal(slow_breath['flow'], list(fast_breath['flow']))
-        assert_list_equal(slow_breath['pressure'], list(fast_breath['pressure']))
-        eq_(slow_breath['bs_time'], fast_breath['bs_time'])
-        eq_(len(slow_breath['t']), len(fast_breath['t']))
-        eq_(slow_breath['ts'][0], fast_breath['abs_bs'])
+def test_raw_utils2():
+    gen  = extract_raw(open(RAW_UTILS_TEST2), False)
+    has_breaths = False
+    for b in gen:
+        has_breaths = True
+        break
+    assert has_breaths
 
 
-def test_extract_raw_speedup_sunny_day():
-    extract_raw_speedup_helper(JIMMY_TEST)
-
-
-def test_speedup_error_case():
-    extract_raw_speedup_helper(SPEEDUP_PARSER_ERROR_CASE)
-
-
-def test_speedup_bad_row_error_case():
-    extract_raw_speedup_helper(SPEEDUP_BAD_ROW_ERROR_CASE)
-
-
-def test_speedup_extra_cols_error_case():
-    extract_raw_speedup_helper(SPEEDUP_EXTRA_COLS_ERROR_CASE)
-
-
-def test_speedup_null_cols_error_case():
-    extract_raw_speedup_helper(SPEEDUP_NULL_COLS_ERROR_CASE)
-
-
-def test_speedup_multi_bad_first_lines_error_case():
-    extract_raw_speedup_helper(SPEEDUP_MULTI_BAD_FIRST_LINES_ERROR_CASE)
-
-
-def test_speedup_no_be_error_case():
-    """
-    Problem here is that speedup doesn't properly ignore missing BEs. Need to fix it
-    """
-    extract_raw_speedup_helper(SPEEDUP_BE_ERROR_CASE)
-
-
-def test_speedup_empty_file_error_case():
-    gen = extract_raw_speedup(open(SPEEDUP_EMPTY_FILE_ERROR_CASE), False)
-    assert_raises(StopIteration, gen.next)
+def test_read_processed_file():
+    out_raw = 'tmp.test.raw.npy'
+    out_proc = 'tmp.test.processed.npy'
+    gen = list(extract_raw(open(RAW_UTILS_TEST2), False))
+    process_breath_file(open(RAW_UTILS_TEST2), False, 'tmp.test')
+    compr = list(read_processed_file(out_raw, out_proc))
+    for idx, breath in enumerate(gen):
+        orig = dict(
+            rel_bn=breath['rel_bn'],
+            vent_bn=breath['vent_bn'],
+            flow=breath['flow'],
+            pressure=breath['pressure'],
+            abs_bs=breath['ts'][0],
+            bs_time=breath['bs_time'],
+            frame_dur=breath['frame_dur'],
+            dt=breath['dt'],
+        )
+        new = compr[idx]
+        new['flow'] = list(new['flow'])
+        new['pressure'] = list(new['pressure'])
+        assert_dict_equal(orig, new)
+    os.remove(out_raw)
+    os.remove(out_proc)

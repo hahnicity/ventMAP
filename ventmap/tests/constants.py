@@ -9,6 +9,7 @@ BREATH_META1_CONTROL = join(dirname(__file__), "samples", "breath_meta_test1.csv
 JIMMY_TEST = join(dirname(__file__), "samples", "jimmy-example-data.csv.test")
 JIMMY_TEST_TOR5 = join(dirname(__file__), "samples/jimmy-example-data/jimmy-example-data.csv_v5_1_0__solo3.csv_test")
 RAW_UTILS_TEST = join(dirname(__file__), "samples", "raw_utils.test")
+RAW_UTILS_TEST2 = join(dirname(__file__), "samples", "raw_utils2.csv.test")
 RAW_UTILS_3_COLUMNS_TEST = NO_BOILERPLATE('raw_utils_3_columns.csv.test')
 MALFORMED_BREATH = NO_BOILERPLATE("malformed_breath.test")
 WITH_TIMESTAMP = join(dirname(__file__), "samples", "vent-file-with-timestamp.csv.test")
