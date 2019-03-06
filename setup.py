@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='ventmap',
-      version="1.0",
+      version="1.1",
       description='Ventilator Multi-Analytic Platform for analysis of ventilator waveform data',
       packages=find_packages(exclude=["*tests*"]),
       install_requires=[

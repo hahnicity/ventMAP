@@ -81,7 +81,4 @@ class TestBreathMeta(object):
         for i, breath in enumerate(extract_raw(open(RAW_UTILS_TEST2), False)):
             bm_orig = get_production_breath_meta(breath)
             bm_new = get_production_breath_meta(gen_processed[i])
-            try:
-                assert_list_equal(bm_orig, bm_new)
-            except:
-                import IPython; IPython.embed()
+            assert_list_equal(bm_orig, bm_new)

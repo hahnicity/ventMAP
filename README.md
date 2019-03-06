@@ -89,6 +89,23 @@ for breath in generator:
     flow, pressure = breath['flow'], breath['pressure']
 ```
 
+If you want to preprocess a breath file for later usage, or if you intend to
+process it again then it is suggested to use the `process_breath_file` method
+
+```python
+from ventmap.raw_utils import process_breath_file, read_processed_file
+
+# This function will output 2 files. The first will just contain raw breath data
+# the other will contain higher level processed data
+process_breath_file(open(<filepath>), False, 'new_filename')
+raw_filepath_name = 'new_filename.raw.npy'
+processed_filepath_name = 'new_filename.processed.npy'
+
+for breath in read_processed_file(raw_filepath_name, processed_filepath_name):
+    # breath data is output in dictionary format
+    flow, pressure = breath['flow'], breath['pressure']
+```
+
 For extracting metadata (I-Time, TVe, TVi) from files.
 
 ```python
@@ -108,9 +125,12 @@ For extracting metadata from individual breaths
 # production breath meta refers to clinician validated algorithms
 # experimental breath meta refers to non-validated algorithms
 from ventmap.breath_meta import get_production_breath_meta, get_experimental_breath_meta
-from ventmap.raw_utils import extract_raw
+from ventmap.raw_utils import extract_raw, read_processed_file
 
 generator = extract_raw(open(<filepath to vent data>), False)
+# OR
+generator = read_processed_file(<raw file>, <processed data file>)
+
 for breath in generator:
     # Data output is normally in list format. Ordering information can be found in
     # ventmap.constants.META_HEADER.
