@@ -6,7 +6,7 @@ import pandas as pd
 
 from ventmap.breath_meta import get_file_breath_meta, get_file_experimental_breath_meta, get_production_breath_meta
 from ventmap.constants import META_HEADER, META_HEADER_TOR_3
-from ventmap.raw_utils import extract_raw, extract_raw_speedup
+from ventmap.raw_utils import extract_raw
 from ventmap.tests.constants import (
     BREATH_META1,
     BREATH_META1_CONTROL,
@@ -27,28 +27,6 @@ def perform_rounding(df):
     df = df.round({"tvi": 1, "tve": 1})
     df = df.round(2)
     return df
-
-
-def breath_meta_raw_utils_speedup_helper(filename):
-    slow_gen = extract_raw(open(filename), False)
-    fast_gen = extract_raw_speedup(open(filename), False)
-    for slow_b in slow_gen:
-        fast_b = fast_gen.next()
-        slow_meta = get_production_breath_meta(slow_b)
-        fast_meta = get_production_breath_meta(fast_b)
-        assert_list_equal(slow_meta, fast_meta)
-
-
-def test_compare_speedup_bm_to_regular_bm():
-    breath_meta_raw_utils_speedup_helper(JIMMY_TEST)
-
-
-def test_compare_speedup_bm_to_regular_bm_parser_error_case():
-    breath_meta_raw_utils_speedup_helper(SPEEDUP_PARSER_ERROR_CASE)
-
-
-def test_compare_speedup_bm_to_regular_bm_null_bytes_error_case():
-    breath_meta_raw_utils_speedup_helper(SPEEDUP_NULL_BYTES_ERROR_CASE)
 
 
 class TestBreathMeta(object):

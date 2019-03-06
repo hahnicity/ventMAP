@@ -28,14 +28,14 @@ def write_breath_meta(array, outfile):
 def get_file_breath_meta(file, tve_pos=True, ignore_missing_bes=True, rel_bn_interval=[], vent_bn_interval=[], to_data_frame=False):
     return _get_file_breath_meta(
         get_production_breath_meta, file, tve_pos, ignore_missing_bes,
-        rel_bn_interval, vent_bn_interval
+        rel_bn_interval, vent_bn_interval, to_data_frame
     )
 
 
 def get_file_experimental_breath_meta(file, tve_pos=True, ignore_missing_bes=True, rel_bn_interval=[], vent_bn_interval=[], to_data_frame=False):
     return _get_file_breath_meta(
         get_experimental_breath_meta, file, tve_pos, ignore_missing_bes,
-        rel_bn_interval, vent_bn_interval
+        rel_bn_interval, vent_bn_interval, to_data_frame
     )
 
 
@@ -101,7 +101,6 @@ def get_production_breath_meta(breath, tve_pos=True, calc_tv3=False):
     RR = 60 / (frame_dur)
     rel_time_at_x0 = bs_time + iTime
 
-    # XXX perform calculation of abs times
     if 'ts' in breath and breath['ts']:
         ts = breath["ts"]
         abs_time_at_x0 = ts[x0_index]
