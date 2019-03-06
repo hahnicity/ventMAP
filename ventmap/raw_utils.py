@@ -578,8 +578,8 @@ def read_processed_file(raw_file, processed_file):
         yield {
             "rel_bn": int(breath_info[0]),
             "vent_bn": int(breath_info[1]),
-            "flow": raw_breath_data[:,0],
-            "pressure": raw_breath_data[:,1],
+            "flow": list(raw_breath_data[:,0]),
+            "pressure": list(raw_breath_data[:,1]),
             "abs_bs": abs_bs,
             "bs_time": bs_time,
             "frame_dur": float(breath_info[-4]),

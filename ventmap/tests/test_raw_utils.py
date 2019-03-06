@@ -140,8 +140,8 @@ def test_read_processed_file():
             dt=breath['dt'],
         )
         new = compr[idx]
-        new['flow'] = list(new['flow'])
-        new['pressure'] = list(new['pressure'])
+        new['flow'] = new['flow']
+        new['pressure'] = new['pressure']
         assert_dict_equal(orig, new)
     os.remove(out_raw)
     os.remove(out_proc)

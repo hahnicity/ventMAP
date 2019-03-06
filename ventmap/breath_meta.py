@@ -79,12 +79,15 @@ def get_production_breath_meta(breath, tve_pos=True, calc_tv3=False):
     """
     rel_bn = breath['rel_bn']
     vent_bn = breath['vent_bn']
-    rel_time_array = breath["t"]
+    bs_time = breath["bs_time"]
+    dt = breath["dt"]
     flow = breath["flow"]
     pressure = breath["pressure"]
-    bs_time = breath["bs_time"] #will need ot change to rel_time_at_BS
+    if 't' not in breath:
+        rel_time_array = [i * dt for i in range(len(flow))]
+    else:
+        rel_time_array = breath["t"]
     frame_dur = breath["frame_dur"]
-    dt = breath["dt"]
     rel_time_at_BS = bs_time
     rel_time_at_BE = bs_time + frame_dur - dt
 
@@ -96,8 +99,9 @@ def get_production_breath_meta(breath, tve_pos=True, calc_tv3=False):
     iTime, x0_index=SAM.x0_heuristic(
         x0_indices_dict=x0_indices_dict, BN=rel_bn, t=rel_time_array)
 
-    eTime = frame_dur - iTime
-    IEratio = (iTime) / (eTime)
+    iTime = round(iTime, 2)
+    eTime = round(frame_dur - iTime, 2)
+    IEratio = round((iTime) / (eTime), 5)
     RR = 60 / (frame_dur)
     rel_time_at_x0 = bs_time + iTime
 
@@ -248,7 +252,7 @@ def get_production_breath_meta(breath, tve_pos=True, calc_tv3=False):
     # 33: rel_time_at_x0, 34: rel_time_at_BE, 35: min_pressure
 
     breath_metaRow = [
-        rel_bn, vent_bn, rel_time_at_BS, rel_time_at_x0, rel_time_at_BE, IEratio, iTime,
+        rel_bn, vent_bn, round(rel_time_at_BS, 2), round(rel_time_at_x0, 2), round(rel_time_at_BE, 2), IEratio, iTime,
         eTime, RR, tvi, tve, TVratio, maxF, minF, maxP, PIP,
         Maw, peep, ipAUC, epAUC, '', bs_time, x01time, tvi1, tve1, x02time,
         tvi2, tve2, x0_index, abs_time_at_BS, abs_time_at_x0, abs_time_at_BE,

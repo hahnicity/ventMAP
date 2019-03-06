@@ -1,4 +1,5 @@
 import csv
+import os
 from os.path import dirname, join
 
 from nose.tools import assert_list_equal, eq_
@@ -6,7 +7,7 @@ import pandas as pd
 
 from ventmap.breath_meta import get_file_breath_meta, get_file_experimental_breath_meta, get_production_breath_meta
 from ventmap.constants import META_HEADER, META_HEADER_TOR_3
-from ventmap.raw_utils import extract_raw
+from ventmap.raw_utils import extract_raw, process_breath_file, read_processed_file
 from ventmap.tests.constants import (
     BREATH_META1,
     BREATH_META1_CONTROL,
@@ -14,8 +15,7 @@ from ventmap.tests.constants import (
     PT0149_BREATH_META,
     PT0149_CSV,
     PT0149_BREATH_META_200TO300,
-    SPEEDUP_PARSER_ERROR_CASE,
-    SPEEDUP_NULL_BYTES_ERROR_CASE,
+    RAW_UTILS_TEST2,
     WITH_TIMESTAMP,
     WITH_TIMESTAMP_CONTROL
 )
@@ -70,3 +70,18 @@ class TestBreathMeta(object):
 
     def test_files_with_timestamps(self):
         self.breath_meta_helper(WITH_TIMESTAMP, WITH_TIMESTAMP_CONTROL, False)
+
+    def test_preprocessed_files_work_with_breath_meta(self):
+        raw_proc = 'tmp.test.raw.npy'
+        proc_proc = 'tmp.test.processed.npy'
+        process_breath_file(open(RAW_UTILS_TEST2), False, 'tmp.test')
+        gen_processed = list(read_processed_file(raw_proc, proc_proc))
+        os.remove(raw_proc)
+        os.remove(proc_proc)
+        for i, breath in enumerate(extract_raw(open(RAW_UTILS_TEST2), False)):
+            bm_orig = get_production_breath_meta(breath)
+            bm_new = get_production_breath_meta(gen_processed[i])
+            try:
+                assert_list_equal(bm_orig, bm_new)
+            except:
+                import IPython; IPython.embed()
