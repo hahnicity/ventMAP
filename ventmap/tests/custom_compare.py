@@ -39,11 +39,11 @@ def assert_df_items_equal(item, comparator_item, result_item, verbose=0):
         assert False, message_for_print_1
 
         if verbose == 1:
-            print message_for_print_1
+            print(message_for_print_1)
         if verbose == 2:
             pass
         else:
-            print ("---- The {} are not equivalent".format(item))
+            print("---- The {} are not equivalent".format(item))
 
 
 def assert_dfs_equal(comparator, result, additional_cols=[],
@@ -79,11 +79,11 @@ def assert_dfs_equal(comparator, result, additional_cols=[],
             assert False, message_for_print_1
 
             if verbose == 1:
-                print message_for_print_1
+                print(message_for_print_1)
             if verbose == 2:
                 pass
             else:
-                print ("---- The column {} is not equivalent".format(col))
+                print("---- The column {} is not equivalent".format(col))
 
 
 def get_csv_or_csv_test_list(dir):

@@ -6,7 +6,7 @@ Gather data for breaths simply without as much heavy logic as we normally need
 """
 import csv
 
-from algorithms.detection import detect_version_v2
+from ventmap.detection import detect_version_v2
 
 
 def gather_flow_and_pressure(f_desc):
