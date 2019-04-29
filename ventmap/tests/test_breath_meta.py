@@ -71,6 +71,11 @@ class TestBreathMeta(object):
     def test_files_with_timestamps(self):
         self.breath_meta_helper(WITH_TIMESTAMP, WITH_TIMESTAMP_CONTROL, False)
 
+    def test_to_series_works(self):
+        for i, breath in enumerate(extract_raw(open(RAW_UTILS_TEST2), False)):
+            bm_orig = get_production_breath_meta(breath, to_series=True)
+            assert isinstance(bm_orig, pd.Series)
+
     def test_preprocessed_files_work_with_breath_meta(self):
         raw_proc = 'tmp.test.raw.npy'
         proc_proc = 'tmp.test.processed.npy'

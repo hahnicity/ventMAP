@@ -7,6 +7,7 @@ Extract breath meta data.
 from argparse import ArgumentParser
 import csv
 from datetime import datetime, timedelta
+from dateutil import parser
 
 import numpy as np
 import pandas as pd
@@ -64,7 +65,7 @@ def _get_file_breath_meta(func, file, tve_pos, ignore_missing_bes, rel_bn_interv
         return pd.DataFrame(array[1:], columns=array[0])
 
 
-def get_production_breath_meta(breath, tve_pos=True, calc_tv3=False):
+def get_production_breath_meta(breath, tve_pos=True, calc_tv3=False, to_series=False):
     """
     Get breath meta information for a given breath. This takes a breath parameter
     as given by raw_utils.py.
@@ -76,6 +77,7 @@ def get_production_breath_meta(breath, tve_pos=True, calc_tv3=False):
     :param breath: Breath information as given by raw_utils.py
     :param tve_pos: Give a positive value for TVe
     :param calc_tv3: Calculate tvi/tve3
+    :param to_series: output breath to a pandas Series object
     """
     rel_bn = breath['rel_bn']
     vent_bn = breath['vent_bn']
@@ -111,9 +113,16 @@ def get_production_breath_meta(breath, tve_pos=True, calc_tv3=False):
         abs_time_at_BS = ts[0]
         abs_time_at_BE = ts[-1]
     elif 'abs_bs' in breath and breath['abs_bs']:
-        abs_time_at_x0 = (datetime.strptime(breath['abs_bs'], OUT_DATETIME_FORMAT) + timedelta(seconds=round(x0_index * .02, 2))).strftime(OUT_DATETIME_FORMAT)
-        abs_time_at_BS = breath['abs_bs']
-        abs_time_at_BE = (datetime.strptime(breath['abs_bs'], OUT_DATETIME_FORMAT) + timedelta(seconds=frame_dur - dt)).strftime(OUT_DATETIME_FORMAT)
+        try:
+            abs_time_at_x0 = (datetime.strptime(breath['abs_bs'], OUT_DATETIME_FORMAT) + timedelta(seconds=round(x0_index * .02, 2))).strftime(OUT_DATETIME_FORMAT)
+            abs_time_at_BS = breath['abs_bs']
+        except ValueError:
+            abs_time_at_x0 = (parser.parse(breath['abs_bs']) + timedelta(seconds=round(x0_index * .02, 2))).strftime(OUT_DATETIME_FORMAT)
+            abs_time_at_BS = parser.parse(breath['abs_bs']).strftime(OUT_DATETIME_FORMAT)
+        try:
+            abs_time_at_BE = (datetime.strptime(breath['abs_bs'], OUT_DATETIME_FORMAT) + timedelta(seconds=frame_dur - dt)).strftime(OUT_DATETIME_FORMAT)
+        except ValueError:
+            abs_time_at_BE = (parser.parse(breath['abs_bs']) + timedelta(seconds=frame_dur - dt)).strftime(OUT_DATETIME_FORMAT)
     else:
         abs_time_at_x0 = "-"
         abs_time_at_BS = "-"
@@ -258,7 +267,10 @@ def get_production_breath_meta(breath, tve_pos=True, calc_tv3=False):
         tvi2, tve2, x0_index, abs_time_at_BS, abs_time_at_x0, abs_time_at_BE,
         rel_time_at_BS, rel_time_at_x0, rel_time_at_BE, min_pressure]
 
-    return breath_metaRow
+    if not to_series:
+        return breath_metaRow
+    else:
+        return pd.Series(breath_metaRow, index=META_HEADER)
 
 
 def get_experimental_breath_meta(breath, tve_pos=True):
