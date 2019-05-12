@@ -175,3 +175,17 @@ for breath in generator:
     # .02 is the sampling rate for the PB-840 corresponding with 1 obs every .02 seconds
     did_plat_occur = check_if_plat_occurs(flow, pressure, .02)
 ```
+
+## Citing
+If you make use of this library in your own work please cite our work.
+
+    @article{adams2017development,
+      title={Development and validation of a multi-algorithm analytic platform to detect off-target mechanical ventilation},
+      author={Adams, Jason Y and Lieng, Monica K and Kuhn, Brooks T and Rehm, Greg B and Guo, Edward C and Taylor, Sandra L and Delplanque, Jean-Pierre and Anderson, Nicholas R},
+      journal={Scientific reports},
+      volume={7},
+      number={1},
+      pages={14980},
+      year={2017},
+      publisher={Nature Publishing Group}
+    }
