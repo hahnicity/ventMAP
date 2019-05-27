@@ -139,6 +139,51 @@ for breath in generator:
     experimental_breath_meta = get_experimental_breath_meta(breath)
 ```
 
+### Breath Metadata
+
+The breath metadata are processed pieces of clinically relevant data that are derived from the raw ventilator waveform
+data. This information can be utilized to do a variety of different things including: analyzing patient ventilator settings,
+or making machine learning classifiers. The exact pieces of metadata output from the `breath_meta` functions are labeled,
+and are documented here:
+
+| Name | Units | Description |
+| --- | --- | --- |
+| BN | N/A | relative breath number in a file |
+| ventBN | N/A | ventilator breath number |
+| BS | seconds | relative breath start time |
+| IEnd | seconds | relative time that inspiration ended |
+| BE | seconds | relative time that the breath ended |
+| I:E ratio | N/A | ratio of inspiratory/expirator time |
+| iTime | seconds | amount of time elapsed on inspiration |
+| eTime | seconds | amount of time elapsed on expiration |
+| inst_RR | breaths/min | total amount of time elapsed on the breath divided by 60 |
+| tvi | ml/second | amount of air breathed in |
+| tve | ml/second | amount of air breathed out |
+| tve:tvi ratio | N/A | ratio of tve divided by tvi |
+| maxF | L/min | maximum flow on the breath |
+| minF | L/min | minimum flow on the breath |
+| maxP | mmH2O | maximum pressure on the breath |
+| PIP | mmH2O | maximum pressure during inspiration |
+| Maw | mmH2O | mean of all pressure readings over breath |
+| PEEP | mmH2O | positive end expiratory pressure |
+| ipAUC | mmH2O | area under the inspiratory pressure curve |
+| epAUC | mmH2O | area under the expiratory pressure curve |
+| placeholder | N/A | Legacy column |
+| BS.1 | N/A | Legacy column |
+| x01 | N/A | Legacy column |
+| tvi1 | N/A | Legacy column |
+| tve1 | N/A | Legacy column |
+| x02 | N/A | Legacy column |
+| tvi2 | N/A | Legacy column |
+| tve2 | N/A | Legacy column |
+| x0_index | N/A | index in observation array when inspiration ends |
+| abs_time_at_BS | date | absolute time breath started |
+| abs_time_at_x0 | date | absolute time that inspiration ended |
+| abs_time_at_BE | date | absolute time that breath ended |
+| rel_time_at_x0 | N/A | Legacy column |
+| rel_time_at_BE | N/A | Legacy column |
+| min_pressure | mmH20 | minimum pressure for the breath |
+
 ### Extras
 
 Clear null bytes from a file
