@@ -16,7 +16,20 @@ If this is your problem, then ventMAP is the platform that you need. The purpose
 is to give basics on how to use ventMAP. The rest on how to use the information is up to you.
 
 ## Install
+ventMAP only uses Python2.7 currently (sorry). If you'd like to help finish Python3 integration then pull requests are always appreciated!
 
+    # make sure you have python2 virtualenv with anaconda
+    conda create -name ventmap python=2.7
+    
+    # OR make sure you have python2 with pipenv
+    pipenv --python=2.7
+    
+    #if using anaconda then activate your new environment
+    #source activate ventmap
+    
+    #activate pipenv environment otherwise
+    #pipenv shell
+    
     pip install ventmap
 
 ## Data Format
