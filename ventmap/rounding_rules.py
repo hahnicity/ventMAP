@@ -56,7 +56,7 @@ def force_round_df2(df):
         result_df = force_round_df2(result_df)
 
     """
-    for col, decimal_place in ROUNDING_RULES_DICT.iteritems():
+    for col, decimal_place in ROUNDING_RULES_DICT.items():
         if col in df.columns: #so that fctn can run on det_dfs
             df.loc[:,col]=df[col].apply(lambda x: round(x,decimal_place))
     return df

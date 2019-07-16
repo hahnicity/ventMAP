@@ -4,8 +4,11 @@ from setuptools import setup, find_packages
 
 
 setup(name='ventmap',
-      version="1.2",
+      author='Gregory Rehm',
+      author_email='grehm87@gmail.com',
+      version="1.3",
       description='Ventilator Multi-Analytic Platform for analysis of ventilator waveform data',
+      python_requires=">=2.7",
       packages=find_packages(exclude=["*tests*"]),
       install_requires=[
           'numpy',

@@ -1,3 +1,4 @@
+from io import open
 from os.path import dirname, join
 
 from nose.tools import assert_greater
@@ -11,9 +12,9 @@ from ventmap.tests.simple_data import gather_flow_and_pressure
 def test_find_slope():
     with open(BREATH_META1) as f:
         data = gather_flow_and_pressure(f)
-        flow = map(lambda x: x[1], data[0])
+        flow = list(map(lambda x: x[1], data[0]))
         slope = find_slope_from_minf_to_zero(
-            map(lambda x: x[0], data[0]), flow, min(flow)
+            list(map(lambda x: x[0], data[0])), flow, min(flow)
         )
         assert_greater(slope, 0)
 
@@ -21,9 +22,9 @@ def test_find_slope():
 def test_find_slope_with_ards():
     with open(ARDS_ONLY) as f:
         data = gather_flow_and_pressure(f)
-        flow = map(lambda x: x[1], data[0])
+        flow = list(map(lambda x: x[1], data[0]))
         slope = find_slope_from_minf_to_zero(
-            map(lambda x: x[0], data[0]), flow, min(flow)
+            list(map(lambda x: x[0], data[0])), flow, min(flow)
         )
         # since ards we want this to be sky high
         assert_greater(slope, 0)
@@ -32,8 +33,8 @@ def test_find_slope_with_ards():
 def test_find_slope_with_copd_patient():
     with open(ARDS_AND_COPD) as f:
         data = gather_flow_and_pressure(f)
-        flow = map(lambda x: x[1], data[0])
-        time = map(lambda x: x[0], data[0])
+        flow = list(map(lambda x: x[1], data[0]))
+        time = list(map(lambda x: x[0], data[0]))
         slope = find_slope_from_minf_to_zero(time, flow, min(flow))
         assert_greater(slope, 0)
 
@@ -41,9 +42,9 @@ def test_find_slope_with_copd_patient():
 def test_find_slope_with_copd_patient2():
     with open(ARDS_AND_COPD) as f:
         data = gather_flow_and_pressure(f)
-        flow = map(lambda x: x[1], data[1])
+        flow = list(map(lambda x: x[1], data[1]))
         slope = find_slope_from_minf_to_zero(
-            map(lambda x: x[0], data[1]), flow, min(flow)
+            list(map(lambda x: x[0], data[1])), flow, min(flow)
         )
         assert_greater(slope, 0)
 
@@ -51,9 +52,9 @@ def test_find_slope_with_copd_patient2():
 def test_find_slope_with_copd_patient3():
     with open(ARDS_AND_COPD) as f:
         data = gather_flow_and_pressure(f)
-        flow = map(lambda x: x[1], data[2])
+        flow = list(map(lambda x: x[1], data[2]))
         slope = find_slope_from_minf_to_zero(
-            map(lambda x: x[0], data[2]), flow, min(flow)
+            list(map(lambda x: x[0], data[2])), flow, min(flow)
         )
         assert_greater(slope, 0)
 

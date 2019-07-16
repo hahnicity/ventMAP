@@ -1,3 +1,4 @@
+from io import open
 import os
 
 from nose.tools import assert_dict_equal, assert_list_equal, assert_raises, eq_
@@ -77,6 +78,7 @@ def test_ensure_things_not_double_counter():
     generator = extract_raw(f, False, vent_bn_interval=[65427, 65428])
     has_data = False
     for sec in generator:
+        print('foo')
         assert sec['vent_bn'] != previous_vent_bn
         has_data = True
         previous_vent_bn = sec['vent_bn']

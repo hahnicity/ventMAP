@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 import csv
 from operator import itemgetter
-from StringIO import StringIO
+from io import open, StringIO
 
 from ventmap.detection import detect_version_v2
 from ventmap.clear_null_bytes import clear_null_bytes

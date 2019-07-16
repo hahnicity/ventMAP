@@ -1,4 +1,5 @@
 import csv
+from io import open
 import os
 from os.path import dirname, join
 

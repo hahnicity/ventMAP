@@ -9,10 +9,7 @@ from datetime import datetime, timedelta
 import io
 import re
 from operator import xor
-try:
-    from StringIO import StringIO
-except:  # python3
-    from io import StringIO
+from io import StringIO
 import sys
 
 import numpy as np
@@ -110,7 +107,7 @@ def extract_raw(descriptor,
             }
             return data_dict
 
-    if not isinstance(descriptor, file) and not isinstance(descriptor, StringIO) and not "cStringIO" in str(descriptor.__class__) and not isinstance(descriptor, io.TextIOWrapper):
+    if not  isinstance(descriptor, StringIO) and not "cStringIO" in str(descriptor.__class__) and not isinstance(descriptor, io.TextIOWrapper):
         raise ValueError("Provide a file descriptor as input!")
     if (len(rel_bn_interval) == 0 and len(vent_bn_interval) == 0 and
         len(spec_rel_bns) == 0 and len(spec_vent_bns) == 0):
@@ -177,13 +174,13 @@ def extract_raw(descriptor,
                 continue
             vent_bn = int(match.groups()[0])
             if rel_bn_interval and rel_bn > rel_bn_interval[1]:
-                raise StopIteration
+                return
             elif vent_bn_interval and vent_bn > vent_bn_interval[1]:
-                raise StopIteration
+                return
             elif spec_rel_bns and rel_bn > spec_rel_bns[-1]:
-                raise StopIteration
+                return
             elif spec_vent_bns and vent_bn > spec_vent_bns[-1]:
-                raise StopIteration
+                return
             elif vent_bn_interval and not (vent_bn_interval[0] <= vent_bn <= vent_bn_interval[1]):
                 has_bs = False
             elif rel_bn_interval and not (rel_bn_interval[0] <= rel_bn <= rel_bn_interval[1]):
@@ -271,7 +268,7 @@ def real_time_extractor(descriptor,
             }
             return data_dict
 
-    if not isinstance(descriptor, file) and not isinstance(descriptor, StringIO) and not "cStringIO" in str(descriptor.__class__) and not isinstance(descriptor, io.TextIOWrapper):
+    if  isinstance(descriptor, StringIO) and not "cStringIO" in str(descriptor.__class__) and not isinstance(descriptor, io.TextIOWrapper):
         raise ValueError("Provide a file descriptor as input!")
     if (len(rel_bn_interval) == 0 and len(vent_bn_interval) == 0 and
         len(spec_rel_bns) == 0 and len(spec_vent_bns) == 0):

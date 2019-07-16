@@ -8,6 +8,7 @@ from argparse import ArgumentParser
 import csv
 from datetime import datetime, timedelta
 from dateutil import parser
+from io import open
 
 import numpy as np
 import pandas as pd
