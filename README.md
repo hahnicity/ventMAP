@@ -19,6 +19,18 @@ is to give basics on how to use ventMAP. The rest on how to use the information 
 `ventmap` is supported for use on both Python2 and Python3 as of version `1.3`.
 Versions `1.2` and below only support Python2
 
+    # make sure you have python virtualenv with anaconda
+    conda create -name ventmap python=3.7
+
+    # OR make sure you have python2 with pipenv
+    pipenv --python=3.7
+
+    #if using anaconda then activate your new environment
+    #source activate ventmap
+
+    #activate pipenv environment otherwise
+    #pipenv shell
+
     pip install ventmap
 
 ## Data Format
