@@ -12,7 +12,11 @@ from io import StringIO
 def clear_descriptor_null_bytes(descriptor):
     descriptor_text = descriptor.read()
     stringio = StringIO()
-    stringio.write(descriptor_text.replace("\x00", ""))
+    try:
+        to_write = unicode(descriptor_text.replace("\x00", ""))
+    except NameError:  # python3
+        to_write = str(descriptor_text.replace("\x00", ""))
+    stringio.write(to_write)
     stringio.seek(0)
     return stringio
 

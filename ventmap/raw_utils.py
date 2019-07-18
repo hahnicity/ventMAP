@@ -108,7 +108,7 @@ def extract_raw(descriptor,
             return data_dict
 
     if not  isinstance(descriptor, StringIO) and not "cStringIO" in str(descriptor.__class__) and not isinstance(descriptor, io.TextIOWrapper):
-        raise ValueError("Provide a file descriptor as input!")
+        raise ValueError("Provide a file descriptor as input! Make sure you are using a Python3 compatible descriptor such as io.open.")
     if (len(rel_bn_interval) == 0 and len(vent_bn_interval) == 0 and
         len(spec_rel_bns) == 0 and len(spec_vent_bns) == 0):
         pass
@@ -268,8 +268,8 @@ def real_time_extractor(descriptor,
             }
             return data_dict
 
-    if  isinstance(descriptor, StringIO) and not "cStringIO" in str(descriptor.__class__) and not isinstance(descriptor, io.TextIOWrapper):
-        raise ValueError("Provide a file descriptor as input!")
+    if not isinstance(descriptor, StringIO) and not "cStringIO" in str(descriptor.__class__) and not isinstance(descriptor, io.TextIOWrapper):
+        raise ValueError("Provide a file descriptor as input! Make sure you are using a Python3 compatible descriptor such as io.open.")
     if (len(rel_bn_interval) == 0 and len(vent_bn_interval) == 0 and
         len(spec_rel_bns) == 0 and len(spec_vent_bns) == 0):
         pass
