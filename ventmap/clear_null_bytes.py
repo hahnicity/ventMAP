@@ -6,7 +6,7 @@ Self explanatory; clears null bytes from files
 """
 import argparse
 import os
-from io import StringIO
+from io import open, StringIO
 
 
 def clear_descriptor_null_bytes(descriptor):

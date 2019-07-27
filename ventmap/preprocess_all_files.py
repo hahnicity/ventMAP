@@ -6,6 +6,7 @@ Preprocess all files in a given directory so they can be loaded in the future mo
 """
 import argparse
 from glob import glob
+from io import open
 import os
 
 from ventmap.raw_utils import process_breath_file
