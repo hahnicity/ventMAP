@@ -4,6 +4,7 @@ NO_BOILERPLATE = lambda x: join(dirname(__file__), "samples", x)
 
 ARDS_AND_COPD = join(dirname(__file__), "samples", "ards-with-copd-and-neg-flows.csv.test")
 ARDS_ONLY = join(dirname(__file__), "samples", "ards-alone.csv.test")
+BAD_UNICODE_ERROR = NO_BOILERPLATE('bad_unicode_error.csv.test')
 BREATH_META1 = join(dirname(__file__), "samples", "breath_meta_test1.csv.test")
 BREATH_META1_CONTROL = join(dirname(__file__), "samples", "breath_meta_test1.csv_v5_1_0__breath_meta.csv_test")
 JIMMY_TEST = join(dirname(__file__), "samples", "jimmy-example-data.csv.test")

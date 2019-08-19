@@ -3,23 +3,8 @@ import os
 
 from nose.tools import assert_dict_equal, assert_list_equal, assert_raises, eq_
 
-from ventmap.raw_utils import extract_raw, process_breath_file, read_processed_file, real_time_extractor
-from ventmap.tests.constants import (
-    ARDS_AND_COPD,
-    JIMMY_TEST,
-    MALFORMED_BREATH,
-    RAW_UTILS_TEST,
-    RAW_UTILS_TEST2,
-    RAW_UTILS_3_COLUMNS_TEST,
-    REAL_TIME_TEST,
-    SPEEDUP_BAD_ROW_ERROR_CASE,
-    SPEEDUP_BE_ERROR_CASE,
-    SPEEDUP_EMPTY_FILE_ERROR_CASE,
-    SPEEDUP_EXTRA_COLS_ERROR_CASE,
-    SPEEDUP_MULTI_BAD_FIRST_LINES_ERROR_CASE,
-    SPEEDUP_NULL_COLS_ERROR_CASE,
-    SPEEDUP_PARSER_ERROR_CASE,
-)
+from ventmap.raw_utils import BadDescriptorError, extract_raw, process_breath_file, read_processed_file, real_time_extractor
+from ventmap.tests.constants import *
 
 
 def test_extract_raw_sunny_day():
@@ -147,3 +132,21 @@ def test_read_processed_file():
         assert_dict_equal(orig, new)
     os.remove(out_raw)
     os.remove(out_proc)
+
+
+def test_bad_unicode_error():
+    gen = extract_raw(open(BAD_UNICODE_ERROR, 'rb'), False)
+    has_breaths = False
+    for b in gen:
+        has_breaths = True
+        break
+    assert has_breaths
+
+
+def test_bad_unicode_error():
+    gen = extract_raw(open(BAD_UNICODE_ERROR, 'rU'), False)
+    try:
+        for b in gen:
+            assert False
+    except BadDescriptorError:
+        pass

@@ -24,6 +24,10 @@ EMPTY_FLOAT_DELIMITER = -1000.0
 EMPTY_DATE_DELIMITER = "2222-12-12 12:12:12.12"
 
 
+class BadDescriptorError(Exception):
+    pass
+
+
 def filter_arrays(flow, pressure, t_array, timestamp_array):
     # Array filtering speedup
     if flow[0] == EMPTY_FLOAT_DELIMITER:
@@ -107,7 +111,7 @@ def extract_raw(descriptor,
             }
             return data_dict
 
-    if not  isinstance(descriptor, StringIO) and not "cStringIO" in str(descriptor.__class__) and not isinstance(descriptor, io.TextIOWrapper):
+    if not  isinstance(descriptor, StringIO) and not "cStringIO" in str(descriptor.__class__) and not isinstance(descriptor, io.TextIOWrapper) and not isinstance(descriptor, io.BufferedReader):
         raise ValueError("Provide a file descriptor as input! Make sure you are using a Python3 compatible descriptor such as io.open.")
     if (len(rel_bn_interval) == 0 and len(vent_bn_interval) == 0 and
         len(spec_rel_bns) == 0 and len(spec_vent_bns) == 0):
@@ -131,7 +135,11 @@ def extract_raw(descriptor,
     has_bs = False
     idx = 0
     flow, pressure, t_array, timestamp_array = reset_arrays(None, None, None, None)
-    descriptor = clear_descriptor_null_bytes(descriptor)
+    if not isinstance(descriptor, io.BufferedReader):
+        try:
+            descriptor = clear_descriptor_null_bytes(descriptor)
+        except UnicodeDecodeError:
+            raise BadDescriptorError('Your descriptor was unable to be read properly. Perhaps you need to open it using rb mode?')
     reader = csv.reader(descriptor)
     data_dict = {}
     vent_bn_regex = re.compile("S:(\d+)")
