@@ -135,7 +135,7 @@ def test_read_processed_file():
 
 
 def test_bad_unicode_error():
-    gen = extract_raw(open(BAD_UNICODE_ERROR, 'rb'), False)
+    gen = extract_raw(open(BAD_UNICODE_ERROR, encoding='ascii', errors='ignore'), False)
     has_breaths = False
     for b in gen:
         has_breaths = True
@@ -143,8 +143,8 @@ def test_bad_unicode_error():
     assert has_breaths
 
 
-def test_bad_unicode_error():
-    gen = extract_raw(open(BAD_UNICODE_ERROR, 'rU'), False)
+def test_bad_unicode_error_fails_with_no_encoding():
+    gen = extract_raw(open(BAD_UNICODE_ERROR, 'rb'), False)
     try:
         for b in gen:
             assert False

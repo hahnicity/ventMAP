@@ -6,19 +6,18 @@ Self explanatory; clears null bytes from files
 """
 import argparse
 import os
-from io import open, StringIO
+from io import BufferedReader, open, StringIO
 
 
 def clear_descriptor_null_bytes(descriptor):
-    descriptor_text = descriptor.read()
-    stringio = StringIO()
+    descriptor_text = descriptor.read().replace('\x00', '')
     try:
-        to_write = unicode(descriptor_text.replace("\x00", ""))
-    except NameError:  # python3
-        to_write = str(descriptor_text.replace("\x00", ""))
-    stringio.write(to_write)
-    stringio.seek(0)
-    return stringio
+        descriptor_text = unicode(descriptor_text)
+    except NameError:  # python 3
+        descriptor_text = str(descriptor_text)
+    reader = StringIO(descriptor_text)
+    reader.seek(0)
+    return reader
 
 
 def clear_null_bytes(input_file):

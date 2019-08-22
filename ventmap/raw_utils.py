@@ -135,11 +135,10 @@ def extract_raw(descriptor,
     has_bs = False
     idx = 0
     flow, pressure, t_array, timestamp_array = reset_arrays(None, None, None, None)
-    if not isinstance(descriptor, io.BufferedReader):
-        try:
-            descriptor = clear_descriptor_null_bytes(descriptor)
-        except UnicodeDecodeError:
-            raise BadDescriptorError('Your descriptor was unable to be read properly. Perhaps you need to open it using rb mode?')
+    try:
+        descriptor = clear_descriptor_null_bytes(descriptor)
+    except UnicodeDecodeError:
+        raise BadDescriptorError('You seem to have opened a file with garbled bytes. you should open it using io.open(file, encoding="ascii", errors="ignore"')
     reader = csv.reader(descriptor)
     data_dict = {}
     vent_bn_regex = re.compile("S:(\d+)")
