@@ -10,11 +10,10 @@ from io import BufferedReader, open, StringIO
 
 
 def clear_descriptor_null_bytes(descriptor):
-    descriptor_text = descriptor.read().replace('\x00', '')
     try:
-        descriptor_text = unicode(descriptor_text)
+        descriptor_text = unicode(descriptor.read().replace('\x00', ''))
     except NameError:  # python 3
-        descriptor_text = str(descriptor_text)
+        descriptor_text = str(descriptor.read()).replace('\x00', '')
     reader = StringIO(descriptor_text)
     reader.seek(0)
     return reader
