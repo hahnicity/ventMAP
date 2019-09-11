@@ -109,6 +109,33 @@ def test_raw_utils2():
     assert has_breaths
 
 
+def test_raw_utils_with_spec_rel_and_vent_bns1():
+    gen  = extract_raw(open(JIMMY_TEST), False, spec_rel_bns=[1], spec_vent_bns=[396])
+    has_breaths = False
+    for b in gen:
+        has_breaths = True
+        break
+    assert has_breaths
+
+
+def test_raw_utils_with_spec_rel_and_vent_bns2():
+    gen  = extract_raw(open(JIMMY_TEST), False, spec_rel_bns=[10], spec_vent_bns=[396])
+    has_breaths = False
+    for b in gen:
+        has_breaths = True
+        break
+    assert not has_breaths
+
+
+def test_raw_utils_with_spec_rel_and_vent_bns3():
+    gen  = extract_raw(open(JIMMY_TEST), False, spec_rel_bns=[1], spec_vent_bns=[500])
+    has_breaths = False
+    for b in gen:
+        has_breaths = True
+        break
+    assert not has_breaths
+
+
 def test_read_processed_file():
     out_raw = 'tmp.test.raw.npy'
     out_proc = 'tmp.test.processed.npy'

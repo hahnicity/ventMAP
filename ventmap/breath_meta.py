@@ -27,21 +27,21 @@ def write_breath_meta(array, outfile):
         writer.writerows(array)
 
 
-def get_file_breath_meta(file, tve_pos=True, ignore_missing_bes=True, rel_bn_interval=[], vent_bn_interval=[], to_data_frame=False):
+def get_file_breath_meta(file, tve_pos=True, ignore_missing_bes=True, rel_bn_interval=[], vent_bn_interval=[], to_data_frame=False, spec_vent_bns=[], spec_rel_bns=[]):
     return _get_file_breath_meta(
         get_production_breath_meta, file, tve_pos, ignore_missing_bes,
-        rel_bn_interval, vent_bn_interval, to_data_frame
+        rel_bn_interval, vent_bn_interval, to_data_frame, spec_vent_bns, spec_rel_bns
     )
 
 
-def get_file_experimental_breath_meta(file, tve_pos=True, ignore_missing_bes=True, rel_bn_interval=[], vent_bn_interval=[], to_data_frame=False):
+def get_file_experimental_breath_meta(file, tve_pos=True, ignore_missing_bes=True, rel_bn_interval=[], vent_bn_interval=[], to_data_frame=False, spec_vent_bns=[], spec_rel_bns=[]):
     return _get_file_breath_meta(
         get_experimental_breath_meta, file, tve_pos, ignore_missing_bes,
-        rel_bn_interval, vent_bn_interval, to_data_frame
+        rel_bn_interval, vent_bn_interval, to_data_frame, spec_vent_bns, spec_rel_bns
     )
 
 
-def _get_file_breath_meta(func, file, tve_pos, ignore_missing_bes, rel_bn_interval, vent_bn_interval, to_data_frame):
+def _get_file_breath_meta(func, file, tve_pos, ignore_missing_bes, rel_bn_interval, vent_bn_interval, to_data_frame, spec_vent_bns, spec_rel_bns):
     if isinstance(file, str):
         file = open(file)
     if "experimental" in func.__name__:
@@ -51,7 +51,8 @@ def _get_file_breath_meta(func, file, tve_pos, ignore_missing_bes, rel_bn_interv
     missing_be_count_threshold = 1000
     missing_be_ratio_threshold = 0.8
     for breath in extract_raw(file, ignore_missing_bes,
-        rel_bn_interval=rel_bn_interval, vent_bn_interval=vent_bn_interval):
+        rel_bn_interval=rel_bn_interval, vent_bn_interval=vent_bn_interval,
+        spec_vent_bns=spec_vent_bns, spec_rel_bns=spec_rel_bns):
         bs_count = breath['bs_count']
         be_count = breath['be_count']
         missing_be = bs_count - be_count

@@ -113,14 +113,7 @@ def extract_raw(descriptor,
 
     if not  isinstance(descriptor, StringIO) and not "cStringIO" in str(descriptor.__class__) and not isinstance(descriptor, io.TextIOWrapper) and not isinstance(descriptor, io.BufferedReader):
         raise ValueError("Provide a file descriptor as input! Make sure you are using a Python3 compatible descriptor such as io.open.")
-    if (len(rel_bn_interval) == 0 and len(vent_bn_interval) == 0 and
-        len(spec_rel_bns) == 0 and len(spec_vent_bns) == 0):
-        pass
-    elif not xor(
-            xor(len(rel_bn_interval) > 0, len(vent_bn_interval) > 0),
-            xor(len(spec_rel_bns) > 0, len(spec_vent_bns) > 0)
-        ):
-        raise ValueError("You can only specify one vent or rel bn filtering option for use!")
+
     spec_rel_bns = sorted(spec_rel_bns)
     spec_vent_bns = sorted(spec_vent_bns)
     collection_start = False
