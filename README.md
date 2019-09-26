@@ -158,7 +158,7 @@ for breath in generator:
     experimental_breath_meta = get_experimental_breath_meta(breath)
 ```
 
-### Breath Metadata
+### Main Breath Metadata
 
 The breath metadata are processed pieces of clinically relevant data that are derived from the raw ventilator waveform
 data. This information can be utilized to do a variety of different things including: analyzing patient ventilator settings,
@@ -202,6 +202,25 @@ and are documented here:
 | rel_time_at_x0 | N/A | Legacy column |
 | rel_time_at_BE | N/A | Legacy column |
 | min_pressure | mmH20 | minimum pressure for the breath |
+
+### Experimental Breath Metadata
+We also have some pieces of more experimental information that have been developed since our 2017 paper.
+
+| Name | Units | Description |
+|---|---|---|
+| slope_minF_to_zero | N/A | The slope of the line from PEF (peak expiratory flow to where flow is zero |
+| pef_+0.16_to_zero | N/A | The slope of the line from the point of PEF+0.16 seconds to where flow is zero. The 0.16 seconds is added because many COPD patients have elastic recoil that causes their expiratory flow to decrease sharply after about 0.16 seconds |
+| mean_flow_from_pef | L/min | The mean expiratory flow |
+| dyn_compliance | ml / sec*mmHg | The [dynamic compliance of a patient's lungs](https://en.wikipedia.org/wiki/Lung_compliance) |
+| vol_at_.5_sec | ml/sec | The volume of air expelled on expiration after 0.5 seconds |
+| vol_at_.76_sec | ml/sec | The volume of air expelled on expiration after 0.76 seconds |
+| vol_at_1_sec | ml/sec | The volume of air expelled on expiration after 1 second |
+| pressure_itime_4 | seconds | Calculate pressure I-time by finding first point moving from back of the breath where pressure goes over PEEP+4mmHg |
+| pressure_itime_5 | seconds | Calculate pressure I-time by finding first point moving from back of the breath where pressure goes over PEEP+5mmHg |
+| pressure_itime_6 | seconds | Calculate pressure I-time by finding first point moving from back of the breath where pressure goes over PEEP+6mmHg |
+| pressure_itime_by_pip5 | seconds | Calculate pressure I-time by finding first point moving from back of the breath where pressure goes over PIP-5mmHg |
+| pressure_itime_by_pip6 | seconds | Calculate pressure I-time by finding first point moving from back of the breath where pressure goes over PIP-6mmHg |
+| pressure_itime_from_front | seconds | First calculate threshold = `(PIP-PEEP)*x` where `0<=x<=1`. In practice we use x=0.4. Then, starting from front of the breath, determine where pressure goes above the `PIP-threshold`, this will be the start of the pressure I-time. Next determine next point where pressure goes below `PIP-threshold`. This will be the end of the pressure I-time. In practice we have found this algorithm to be the most stable |
 
 ### Extras
 

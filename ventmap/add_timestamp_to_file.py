@@ -6,11 +6,21 @@ import re
 import subprocess
 
 
-def does_file_have_no_timestamp_pat(filename):
+def does_file_have_old_timestamp_pat(filename):
     pattern = re.compile(
-        "(?P<year>201[456])-(?P<month>[01]\d)-(?P<day>[0123]\d)"
+        "(?P<year>\d{4})-(?P<month>[01]\d)-(?P<day>[0123]\d)"
         "__(?P<hour>[012]\d):(?P<minute>\d{2}):(?P<second>\d{2})"
-        ".(?P<millis>\d+).csv"
+        ".(?P<millis>[0-9]+).csv"
+    )
+    match = pattern.search(filename)
+    return match if match else False
+
+
+def does_file_have_new_timestamp_pat(filename):
+    pattern = re.compile(
+        "(?P<year>\d{4})-(?P<month>[01]\d)-(?P<day>[0123]\d)"
+        "-(?P<hour>[012]\d)-(?P<minute>\d{2})-(?P<second>\d{2})"
+        ".(?P<millis>[0-9]{6}).csv"
     )
     match = pattern.search(filename)
     return match if match else False
@@ -28,13 +38,16 @@ def check_if_file_already_has_timestamp(filename):
 
 
 def add_timestamp(filename):
-    match = does_file_have_no_timestamp_pat(filename)
-    if not match:
-        raise Exception("no file-to-regex match")
+    old_match = does_file_have_old_timestamp_pat(filename)
+    new_match = does_file_have_new_timestamp_pat(filename)
+    if not old_match and not new_match:
+        raise Exception("no file-to-regex match for file {}".format(filename))
+    match = old_match if old_match else new_match
     if check_if_file_already_has_timestamp(filename):
         return
     dict_ = match.groupdict()
-    dict_['millis'] = int(dict_['millis']) / 1000
+    if old_match:
+        dict_['millis'] = dict_['millis'][:-3]
     time = "{year}-{month}-{day}-{hour}-{minute}-{second}.{millis}".format(**dict_)
     # ensure the date can be read properly
     datetime.strptime(time, '%Y-%m-%d-%H-%M-%S.%f')
