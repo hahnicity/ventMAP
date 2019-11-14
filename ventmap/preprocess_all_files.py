@@ -20,7 +20,8 @@ def main():
     files = glob(os.path.join(args.dir, '*.csv'))
     for filename in files:
         output_filename = os.path.splitext(filename)[0]
-        process_breath_file(open(filename), False, output_filename)
+
+        process_breath_file(open(filename, encoding='ascii', errors='ignore'), False, output_filename)
 
 
 if __name__ == "__main__":
