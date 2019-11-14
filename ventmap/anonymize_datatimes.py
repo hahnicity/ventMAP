@@ -60,6 +60,7 @@ def main():
     parser.add_argument('--shift-file', help='mapping of patient to the amount of time (hours) we want to shift the data by')
     parser.add_argument('--cohort-file', help='A pre-made cohort file')
     parser.add_argument('--rm-old-dir', help='remove old (non-anonymized) directory')
+    parser.add_argument('--new-cohort-file', help='make a new cohort file with patient data. Allows us to track patients that we\'ve already processed')
     args = parser.parse_args()
 
     match = re.search(patient_pattern, args.patient_dir)
@@ -80,6 +81,18 @@ def main():
             raise NoPatientError('patient {} not found in shift file, or may be duplicated'.format(patient))
         shift_hours = patient_data.iloc[0].shift_hours
         new_patient_id = patient_data.iloc[0].new_patient_id
+
+    elif args.new_cohort_file:
+        try:
+            cohort_data = pd.read_csv(args.new_cohort_file)
+            new_patient_ids = cohort_data.new_patient_id.unique()
+            cohort_data = cohort_data.values.tolist()
+        except:
+            cohort_data = []
+            new_patient_ids = []
+
+        while new_patient_id in new_patient_ids:
+            new_patient_id = randint(0, max_patient_id)
 
     elif args.cohort_file:
         cohort_data = pd.read_csv(args.cohort_file)
@@ -166,6 +179,11 @@ def main():
         cohort_data.loc[patient_data.index, 'shifted_start'] = shifted_time.strftime(csv_datetime_time_pattern)
         cohort_data.loc[patient_data.index, 'new_patient_id'] = new_patient_id
         cohort_data.to_csv(args.cohort_file, index=False)
+
+    elif args.new_cohort_file:
+        cohort_data.append([patient, new_patient_id])
+        df = pd.DataFrame(cohort_data, columns=['old_patient_id', 'new_patient_id'])
+        df.to_csv(args.new_cohort_file, index=False)
 
 
 if __name__ == "__main__":
