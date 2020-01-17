@@ -59,7 +59,7 @@ def main():
     parser.add_argument('patient_dir', help='path to the patient directory')
     parser.add_argument('--shift-file', help='mapping of patient to the amount of time (hours) we want to shift the data by')
     parser.add_argument('--cohort-file', help='A pre-made cohort file')
-    parser.add_argument('--rm-old-dir', help='remove old (non-anonymized) directory')
+    parser.add_argument('--rm-old-dir', help='remove old (non-anonymized) directory', action='store_true')
     parser.add_argument('--new-cohort-file', help='make a new cohort file with patient data. Allows us to track patients that we\'ve already processed')
     args = parser.parse_args()
 
