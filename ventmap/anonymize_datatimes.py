@@ -98,7 +98,7 @@ def process_csv_file(filename, shift_hours, patient, new_patient_id):
 def process_npy_file(filename, shift_hours, patient, new_patient_id):
     processed = np.load(filename)
     abs_bs_loc = 2
-    for arr in processed:
+    for i, arr in enumerate(processed):
         abs_bs = arr[abs_bs_loc]
         try:
             converted = datetime.strptime(abs_bs, npy_datetime_time_pattern) + timedelta(hours=shift_hours)
@@ -106,7 +106,7 @@ def process_npy_file(filename, shift_hours, patient, new_patient_id):
             warn('file: {} had improperly formated datetime information.'.format(filename))
             return False
 
-        processed[abs_bs_loc] = converted.strftime(npy_datetime_time_pattern)
+        processed[i][abs_bs_loc] = converted.strftime(npy_datetime_time_pattern)
     new_filename = get_name_filepath(filename, shift_hours, patient, new_patient_id)
     np.save(new_filename, processed)
     return True
@@ -206,8 +206,12 @@ def main():
     new_dir = os.path.join(args.patient_dir.replace(patient, str(new_patient_id)))
     os.mkdir(new_dir)
     for i, file in enumerate(files):
-
-        shutil.move(new_files_to_move[i], os.path.join(new_dir, os.path.basename(new_files_to_move[i])))
+        new_filename = new_files_to_move[i]
+        new_filepath = os.path.join(new_dir, os.path.basename(new_files_to_move[i]))
+        shutil.move(new_filename, new_filepath)
+        if file.endswith('.processed.npy'):
+            old_raw_file = file.replace('.processed.npy', '.raw.npy')
+            shutil.move(old_raw_file, new_filepath.replace('.processed.npy', '.raw.npy'))
         os.remove(file)
 
     if args.rm_old_dir:
