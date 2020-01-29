@@ -9,14 +9,14 @@ to shift the patient files by.
 Shift file should take CSV format and look like
 
 patient,shift_hours,new_patient_id
-XXXXRPIXXXXXXXXXX,100000,100
+XXXXRPIXXXXXXXXXX,100000,1314
 ...
 
-Another option is to specify a pre-made cohort file with prior information in it. The cohort file
-should have the following information
-
-patient,...,start_time,...
-XXXXRPIXXXXXXXXXX,...,2018-10-10 04:00:00,...
+If you do not want to go through the trouble of setting this up yourself at first, then you can just
+opt to allow the script to do all this work for you by using the --new-cohort-file option. This will
+run through your patient directory and then output information in a similar manner to how the shift-file
+would originally. As a potentially usefull side note: any file used for a --new-cohort-file can also
+be used in the future as a --shift-file
 """
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
@@ -57,22 +57,17 @@ class NoPatientError(Exception):
 def main():
     parser = ArgumentParser()
     parser.add_argument('patient_dir', help='path to the patient directory')
-    parser.add_argument('--shift-file', help='mapping of patient to the amount of time (hours) we want to shift the data by')
-    parser.add_argument('--cohort-file', help='A pre-made cohort file')
+    mutex = parser.add_mutually_exclusive_group()
+    mutex.add_argument('--shift-file', help='mapping of patient to the amount of time (hours) we want to shift the data by')
+    mutex.add_argument('--new-cohort-file', help='make a new cohort file with patient data. Allows us to track patients that we\'ve already processed. The difference between this and --shift-file is that that shift-file is already made, whereas this argument presumes no prior thought from the user')
     parser.add_argument('--rm-old-dir', help='remove old (non-anonymized) directory', action='store_true')
-    parser.add_argument('--new-cohort-file', help='make a new cohort file with patient data. Allows us to track patients that we\'ve already processed')
     args = parser.parse_args()
 
     match = re.search(patient_pattern, args.patient_dir)
-    if not match and (args.shift_file or args.cohort_file):
-        raise NoPatientError('Patient pattern not found for directory {}'.format(args.patient_dir))
+    if not match:
+        raise NoPatientError('Patient pattern not found for directory {}. Check pattern or maybe update this script'.format(args.patient_dir))
     elif match:
         patient = match.groups()[0]
-    else:
-        patient = ''
-
-    shift_hours = randint(min_years*24*365, max_years*24*365)
-    new_patient_id = randint(0, max_patient_id)
 
     if args.shift_file:
         shift_data = pd.read_csv(args.shift_file)
@@ -93,32 +88,11 @@ def main():
 
         while new_patient_id in new_patient_ids:
             new_patient_id = randint(0, max_patient_id)
+    else:
+        shift_hours = randint(min_years*24*365, max_years*24*365)
+        new_patient_id = randint(0, max_patient_id)
 
-    elif args.cohort_file:
-        cohort_data = pd.read_csv(args.cohort_file)
-        patient_data = cohort_data[cohort_data.patient == patient]
-        if len(patient_data) != 1:
-            raise NoPatientError('patient {} not found in cohort file, or may be duplicated'.format(patient))
-        try:
-            shifted_start = patient_data.iloc[0].shifted_start
-        except AttributeError:
-            pass
-        else:
-            if not pd.isna(shifted_start):
-                raise DataAlreadyShiftedError('you have already shifted data for patient {}'.format(patient))
-
-        start_time = pd.to_datetime(patient_data.iloc[0].start_time)
-        shifted_time = start_time + timedelta(hours=shift_hours)
-        try:
-            new_patient_ids = cohort_data.new_patient_id.unique()
-        except AttributeError:
-            new_patient_ids = []
-
-        while new_patient_id in new_patient_ids:
-            new_patient_id = randint(0, max_patient_id)
-
-
-    print("shifting patient: {} data by hours: {}".format(patient, shift_hours))
+    print("shifting patient: {} data by hours: {} new id: {}".format(patient, shift_hours, new_patient_id))
 
     files = glob(os.path.join(args.patient_dir, '*.csv'))
     if len(files) == 0:
@@ -170,19 +144,13 @@ def main():
     os.mkdir(new_dir)
     for i, file in enumerate(files):
         os.rename(new_files_to_move[i], os.path.join(new_dir, os.path.basename(new_files_to_move[i])))
-        os.remove(file)
 
     if args.rm_old_dir:
         shutil.rmtree(args.patient_dir)
 
-    if args.cohort_file:
-        cohort_data.loc[patient_data.index, 'shifted_start'] = shifted_time.strftime(csv_datetime_time_pattern)
-        cohort_data.loc[patient_data.index, 'new_patient_id'] = new_patient_id
-        cohort_data.to_csv(args.cohort_file, index=False)
-
-    elif args.new_cohort_file:
-        cohort_data.append([patient, new_patient_id])
-        df = pd.DataFrame(cohort_data, columns=['old_patient_id', 'new_patient_id'])
+    if args.new_cohort_file:
+        cohort_data.append([patient, new_patient_id, shift_hours])
+        df = pd.DataFrame(cohort_data, columns=['patient_id', 'new_patient_id', 'shift_hours'])
         df.to_csv(args.new_cohort_file, index=False)
 
 
