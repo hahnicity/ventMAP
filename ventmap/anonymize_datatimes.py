@@ -37,6 +37,7 @@ patient_pattern = r'(\w{4}RPI\w{10}[-_]?\d?)'
 old_file_datetime_time_pattern = '%Y-%m-%d__%H:%M:%S.%f'
 data_datetime_time_pattern = '%Y-%m-%d-%H-%M-%S.%f'
 csv_datetime_time_pattern = '%Y-%m-%d %H-%M-%S'
+npy_datetime_time_pattern = '%Y-%m-%d %H-%M-%S.%f'
 max_patient_id = 10000
 min_years = 100
 max_years = 200
@@ -52,6 +53,63 @@ class DataAlreadyShiftedError(Exception):
 
 class NoPatientError(Exception):
     pass
+
+
+def get_name_filepath(filename, shift_hours, patient, new_patient_id):
+    try:
+        file_dt = file_date_pattern.search(filename).groups()[0]
+        new_file_dt = datetime.strptime(file_dt, data_datetime_time_pattern) + timedelta(hours=shift_hours)
+    except:
+        file_dt = old_file_date_pattern.search(filename).groups()[0]
+        new_file_dt = datetime.strptime(file_dt[:-3], old_file_datetime_time_pattern) + timedelta(hours=shift_hours)
+
+    new_file_dt = new_file_dt.strftime(data_datetime_time_pattern)
+    idx = filename.index(file_dt)
+    new_filename = (os.path.basename(filename[0:idx] + new_file_dt + filename[idx+len(file_dt):])).replace(patient, str(new_patient_id))
+    return os.path.join('/tmp/', new_filename)
+
+
+def process_csv_file(filename, shift_hours, patient, new_patient_id):
+    match_found = False
+    places_to_change = []
+    with open(filename, 'r') as f:
+        file_data = f.read()
+        # XXX a regex findall might be more efficient?? Maybe test.
+        for line in file_data.split('\n'):
+            if text_date_pattern.search(line):
+                match_found = True
+                dt = datetime.strptime(line, data_datetime_time_pattern)
+                new_dt = dt + timedelta(hours=shift_hours)
+                places_to_change.append((file_data.index(line), new_dt.strftime(data_datetime_time_pattern)))
+
+        if not match_found:
+            warn('file: {} had no matching datetime found.'.format(filename))
+            return False
+
+        for index, new_dt in places_to_change:
+            file_data = file_data[0:index] + new_dt + file_data[index+len(new_dt):]
+
+        new_filename = get_name_filepath(filename, shift_hours, patient, new_patient_id)
+        with open(new_filename, 'w') as new_file:
+            new_file.write(file_data)
+        return True
+
+
+def process_npy_file(filename, shift_hours, patient, new_patient_id):
+    processed = np.load(filename)
+    abs_bs_loc = 2
+    for i, arr in enumerate(processed):
+        abs_bs = arr[abs_bs_loc]
+        try:
+            converted = datetime.strptime(abs_bs, npy_datetime_time_pattern) + timedelta(hours=shift_hours)
+        except ValueError:
+            warn('file: {} had improperly formated datetime information.'.format(filename))
+            return False
+
+        processed[i][abs_bs_loc] = converted.strftime(npy_datetime_time_pattern)
+    new_filename = get_name_filepath(filename, shift_hours, patient, new_patient_id)
+    np.save(new_filename, processed)
+    return True
 
 
 def main():
@@ -95,43 +153,23 @@ def main():
     print("shifting patient: {} data by hours: {} new id: {}".format(patient, shift_hours, new_patient_id))
 
     files = glob(os.path.join(args.patient_dir, '*.csv'))
+    files += glob(os.path.join(args.patient_dir, '*.processed.npy'))
     if len(files) == 0:
         raise NoFilesError('No files found in directory {}'.format(args.patient_dir))
 
     new_files_to_move = []
     remove_files_from_arr = []
-    for file in files:
-        places_to_change = []
-        file_data = open(file).read()
-        match_found = False
-        for line in file_data.split('\n'):
-            if text_date_pattern.search(line):
-                match_found = True
-                dt = datetime.strptime(line, data_datetime_time_pattern)
-                new_dt = dt + timedelta(hours=shift_hours)
-                places_to_change.append((file_data.index(line), new_dt.strftime(data_datetime_time_pattern)))
+    for filename in files:
+        if filename.endswith('.csv'):
+            processsed_ok = process_csv_file(filename, shift_hours, patient, new_patient_id)
+        elif filename.endswith('.processed.npy'):
+            processsed_ok = process_npy_file(filename, shift_hours, patient, new_patient_id)
 
-        if not match_found:
-            warn('file: {} had no matching datetime found.'.format(file))
-            remove_files_from_arr.append(file)
-            continue
-
-        for index, new_dt in places_to_change:
-            file_data = file_data[0:index] + new_dt + file_data[index+len(new_dt):]
-
-        try:
-            file_dt = file_date_pattern.search(file).groups()[0]
-            new_file_dt = datetime.strptime(file_dt, data_datetime_time_pattern) + timedelta(hours=shift_hours)
-        except:
-            file_dt = old_file_date_pattern.search(file).groups()[0]
-            new_file_dt = datetime.strptime(file_dt[:-3], old_file_datetime_time_pattern) + timedelta(hours=shift_hours)
-
-        new_file_dt = new_file_dt.strftime(data_datetime_time_pattern)
-        idx = file.index(file_dt)
-        new_filename = (os.path.basename(file[0:idx] + new_file_dt + file[idx+len(file_dt):])).replace(patient, str(new_patient_id))
-        with open('/tmp/{}'.format(new_filename), 'w') as new_file:
-            new_file.write(file_data)
-            new_files_to_move.append('/tmp/{}'.format(new_filename))
+        if not processsed_ok:
+            remove_files_from_arr.append(filename)
+        else:
+            new_filename = get_name_filepath(filename, shift_hours, patient, new_patient_id)
+            new_files_to_move.append(new_filename)
 
     for file in remove_files_from_arr:
         idx = files.index(file)
@@ -143,7 +181,17 @@ def main():
     new_dir = os.path.join(args.patient_dir.replace(patient, str(new_patient_id)))
     os.mkdir(new_dir)
     for i, file in enumerate(files):
-        os.rename(new_files_to_move[i], os.path.join(new_dir, os.path.basename(new_files_to_move[i])))
+        new_filename = new_files_to_move[i]
+        new_filepath = os.path.join(new_dir, os.path.basename(new_files_to_move[i]))
+        shutil.move(new_filename, new_filepath)
+        # This bit of logic is a bit confusing but basically means that we only have .processed.npy files in the
+        # list of collected files, but we still have to move the .raw.npy files as well. There's really nothing
+        # to do with these files except change their name thankfully. Anyhow, we just reference the .processed.npy
+        # file and since theres a 1-1 mapping between processed and raw files we can just do a string replacement
+        # to get everything to work properly.
+        if file.endswith('.processed.npy'):
+            old_raw_file = file.replace('.processed.npy', '.raw.npy')
+            shutil.move(old_raw_file, new_filepath.replace('.processed.npy', '.raw.npy'))
 
     if args.rm_old_dir:
         shutil.rmtree(args.patient_dir)
