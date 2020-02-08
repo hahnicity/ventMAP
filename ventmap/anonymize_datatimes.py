@@ -15,7 +15,7 @@ XXXXRPIXXXXXXXXXX,100000,1314
 If you do not want to go through the trouble of setting this up yourself at first, then you can just
 opt to allow the script to do all this work for you by using the --new-cohort-file option. This will
 run through your patient directory and then output information in a similar manner to how the shift-file
-would originally. As a potentially usefull side note: any file used for a --new-cohort-file can also
+would originally. As a potentially useful side note: any file used for a --new-cohort-file can also
 be used in the future as a --shift-file
 """
 from argparse import ArgumentParser
@@ -119,6 +119,7 @@ def main():
     mutex.add_argument('--shift-file', help='mapping of patient to the amount of time (hours) we want to shift the data by')
     mutex.add_argument('--new-cohort-file', help='make a new cohort file with patient data. Allows us to track patients that we\'ve already processed. The difference between this and --shift-file is that that shift-file is already made, whereas this argument presumes no prior thought from the user')
     parser.add_argument('--rm-old-dir', help='remove old (non-anonymized) directory', action='store_true')
+    parser.add_argument('--new-dir', help='specify a new directory path to save patient data. If not specified then script will save data into 1 level above where patient directory is located')
     args = parser.parse_args()
 
     match = re.search(patient_pattern, args.patient_dir)
@@ -178,7 +179,7 @@ def main():
     if len(files) == 0:
         raise NoFilesError("No files were found to move for patient {} after final check".format(patient))
 
-    new_dir = os.path.join(args.patient_dir.replace(patient, str(new_patient_id)))
+    new_dir = args.patient_dir.replace(patient, str(new_patient_id)) if not args.new_dir else os.path.join(args.new_dir, str(new_patient_id))
     os.mkdir(new_dir)
     for i, file in enumerate(files):
         new_filename = new_files_to_move[i]
