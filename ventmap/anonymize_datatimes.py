@@ -192,7 +192,7 @@ def main():
         # to get everything to work properly.
         if file.endswith('.processed.npy'):
             old_raw_file = file.replace('.processed.npy', '.raw.npy')
-            shutil.move(old_raw_file, new_filepath.replace('.processed.npy', '.raw.npy'))
+            shutil.copy(old_raw_file, new_filepath.replace('.processed.npy', '.raw.npy'))
 
     if args.rm_old_dir:
         shutil.rmtree(args.patient_dir)
