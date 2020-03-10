@@ -6,6 +6,7 @@ Extract raw data from a text file and return it in some kind of presentable form
 """
 import csv
 from datetime import datetime, timedelta
+from dateutil import parser
 import io
 import re
 from operator import xor
@@ -19,44 +20,169 @@ from ventmap.clear_null_bytes import clear_descriptor_null_bytes
 from ventmap.constants import IN_DATETIME_FORMAT, OUT_DATETIME_FORMAT
 from ventmap.detection import detect_version_v2
 
-csv.field_size_limit(sys.maxsize)
-EMPTY_FLOAT_DELIMITER = -1000.0
-EMPTY_DATE_DELIMITER = "2222-12-12 12:12:12.12"
-
 
 class BadDescriptorError(Exception):
     pass
 
 
-def filter_arrays(flow, pressure, t_array, timestamp_array):
-    # Array filtering speedup
-    if flow[0] == EMPTY_FLOAT_DELIMITER:
-        return [], [], [], []
-    for idx, i in enumerate(flow):
-        if i == EMPTY_FLOAT_DELIMITER:
-            final_rel_idx = idx
-            break
-    else:
-        raise Exception("You breath has overflowed the buffer for # observations in a breath. Something went wrong")
-    if timestamp_array[0] == EMPTY_DATE_DELIMITER:
-        final_ts_idx = 0
-    else:
-        final_ts_idx = final_rel_idx
-    # Don't add  + 1 because we are tracking up to the empty delim
-    flow = flow[:final_rel_idx]
-    pressure = pressure[:final_rel_idx]
-    t_array = t_array[:final_rel_idx]
-    timestamp_array = timestamp_array[:final_ts_idx]
-    return flow, pressure, t_array, timestamp_array
+class VentilatorBase(object):
+    def __init__(self, descriptor):
+        """
+        :param descriptor: The file descriptor to use
+        """
+        self.descriptor = descriptor
+        if not  isinstance(self.descriptor, StringIO) and \
+        not "cStringIO" in str(self.descriptor.__class__) \
+        and not isinstance(self.descriptor, io.TextIOWrapper) \
+        and not isinstance(self.descriptor, io.BufferedReader):
+            raise ValueError("Provide a file descriptor as input! Make sure you are using a Python3 compatible descriptor such as io.open.")
+        self.rel_bs_time = 0
+        self.abs_bs_time = None
+        self.vent_bn = 0
+        self.rel_bn = 0
+        try:
+            self.descriptor = clear_descriptor_null_bytes(self.descriptor)
+        except UnicodeDecodeError:
+            raise BadDescriptorError('You seem to have opened a file with garbled bytes. you should open it using io.open(file, encoding="ascii", errors="ignore"')
+
+        self.descriptor.seek(0)
+        first_line = self.descriptor.readline()
+        self.bs_col, self.ncol, self.ts_1st_col, self.ts_1st_row = detect_version_v2(first_line)
+        self.descriptor.seek(0)
+
+    def get_data(self, flow, pressure):
+        return {
+            "rel_bn": self.rel_bn,
+            "vent_bn": self.vent_bn,
+            "flow": flow,
+            "pressure": pressure,
+            "bs_time": round(self.rel_bs_time, 2),
+            "frame_dur": round(len(flow) * self.dt, 2),
+            "dt": self.dt,
+            'abs_bs': self.abs_bs_time.strftime(OUT_DATETIME_FORMAT) if self.abs_bs_time else None,
+        }
+
+    def set_rel_bs_time(self, last_t):
+        self.rel_bs_time = self.rel_bs_time + last_t
+
+    def set_abs_bs_time(self, row):
+        if self.ts_1st_col:
+            self.abs_bs_time = parser.parse(row[0])
+        else:
+            self.abs_bs_time = datetime.strptime(row[0], IN_DATETIME_FORMAT)
+
+    def set_abs_bs_time_if_bs(self, row, last_t):
+        if self.ts_1st_col:
+            self.abs_bs_time = parser.parse(row[0]) + timedelta(seconds=self.dt)
+        elif self.abs_bs_time is not None:
+            self.abs_bs_time = self.abs_bs_time + timedelta(seconds=last_t)
+
+    def extract_raw(self,
+                    skip_breaths_without_be,
+                    rel_bn_interval=[],
+                    vent_bn_interval=[],
+                    spec_rel_bns=[],
+                    spec_vent_bns=[]):
+        """
+        Takes a file descriptor and returns the raw data on the
+        breath for us to use. Returns data in format
+
+        {
+            'vent_bn': vent_bn,
+            'ts': [ts1, ts2, ...],
+            'flow': [flow1, flow2, ...],
+            'pressure': [pressure1, pressure2, ...],
+            ....
+        }
+
+        :param skip_breaths_without_be: boolean whether or not to skip breaths without BE. False for no, True for yes
+        :param rel_bn_interval: The relative [start, end] interval for the data
+        :param vent_bn_interval: The vent bn [start, end] interval for the data
+        :param spec_rel_bns: The specific relative bns that we want eg: [1, 10, 20]
+        :param spec_vent_bns: The specific vent bns that we want eg: [1, 10, 20]
+        """
+        spec_rel_bns = sorted(spec_rel_bns)
+        spec_vent_bns = sorted(spec_vent_bns)
+        collection_start = False
+        # this is a var used to keep track of time incase we dont see a datetime to update us
+        last_breath_time = self.dt
+        has_bs = False
+        date_search = re.compile("^20[12]\d-[01]\d-")
+        flow, pressure, data_list = [], [], []
+        vent_bn_regex = re.compile("S:(\d+)")
+
+        for row in self.descriptor.readlines():
+            row = row.strip().split(',')
+            try:
+                row[self.bs_col]
+            except IndexError:
+                continue
+
+            if date_search.search(row[0]) and not self.ts_1st_col:
+                self.set_abs_bs_time(row)
+                continue
+
+            if row[self.bs_col].strip() == "BS":
+                if not skip_breaths_without_be and has_bs:
+                    if len(flow) > 0:
+                        last_breath_time = self.dt * len(flow)
+                        data_list.append(self.get_data(flow, pressure))
+                self.set_rel_bs_time(last_breath_time)
+                self.set_abs_bs_time_if_bs(row, last_breath_time)
+                self.rel_bn += 1
+                has_bs = True
+                flow, pressure = [], []
+                try:
+                    match = vent_bn_regex.search(row[self.bs_col + 1])
+                except IndexError:
+                    has_bs = False
+                    continue
+
+                if not match:
+                    has_bs = False  # Don't collect data for the breath
+                    continue
+                self.vent_bn = int(match.groups()[0])
+                if rel_bn_interval and self.rel_bn > rel_bn_interval[1]:
+                    return data_list
+                elif vent_bn_interval and self.vent_bn > vent_bn_interval[1]:
+                    return data_list
+                elif spec_rel_bns and self.rel_bn > spec_rel_bns[-1]:
+                    return data_list
+                elif spec_vent_bns and self.vent_bn > spec_vent_bns[-1]:
+                    return data_list
+                elif vent_bn_interval and not (vent_bn_interval[0] <= self.vent_bn <= vent_bn_interval[1]):
+                    has_bs = False
+                elif rel_bn_interval and not (rel_bn_interval[0] <= self.rel_bn <= rel_bn_interval[1]):
+                    has_bs = False
+                elif spec_rel_bns and (self.rel_bn not in spec_rel_bns):
+                    has_bs = False
+                elif spec_vent_bns and (self.vent_bn not in spec_vent_bns):
+                    has_bs = False
+
+            elif row[self.bs_col].strip() == "BE":
+                has_bs = False
+                if len(flow) > 0:
+                    last_breath_time = self.dt * len(flow)
+                    data_list.append(self.get_data(flow, pressure))
+                    flow, pressure = [], []
+            else:
+                if not has_bs:
+                    continue
+                try:
+                    flow.append(round(float(row[self.ncol - 2]), 2))
+                    pressure.append(round(float(row[self.ncol - 1]), 2))
+                except (IndexError, ValueError):
+                    continue
+
+        return data_list
 
 
-def reset_arrays(flow, pressure, t_array, timestamp_array):
-    n_obs = 2000
-    flow = [EMPTY_FLOAT_DELIMITER] * n_obs
-    pressure = [EMPTY_FLOAT_DELIMITER] * n_obs
-    t_array = [EMPTY_FLOAT_DELIMITER] * n_obs
-    timestamp_array = [EMPTY_DATE_DELIMITER] * n_obs
-    return flow, pressure, t_array, timestamp_array
+class PB840File(VentilatorBase):
+    dt = 0.02
+
+
+class HundredHzFile(VentilatorBase):
+    dt = 0.01
 
 
 def extract_raw(descriptor,
@@ -66,163 +192,11 @@ def extract_raw(descriptor,
                 spec_rel_bns=[],
                 spec_vent_bns=[]):
     """
-    Takes a file descriptor and returns the raw data on the
-    breath for us to use. Returns data in format
-
-    {
-        'vent_bn': vent_bn,
-        't': [rel_t1, rel_t2, ...],
-        'ts': [ts1, ts2, ...],
-        'flow': [flow1, flow2, ...],
-        'pressure': [pressure1, pressure2, ...],
-        'be_count': be_count,
-        'bs_count': bs_count,
-        ....
-    }
-
-    :param descriptor: The file descriptor to use
-    :param ignore_missing_bes: boolean whether or not to ignore missing BEs in the data (False if we want to use breaths without a BE, True otherwise)
-    :param rel_bn_interval: The relative [start, end] interval for the data
-    :param vent_bn_interval: The vent bn [start, end] interval for the data
-    :param spec_rel_bns: The specific relative bns that we want eg: [1, 10, 20]
-    :param spec_vent_bns: The specific vent bns that we want eg: [1, 10, 20]
+    Deprecated method for extracting VWD. Newer implementations should look at
+    using a specific ventilator class like PB840.extract_raw
     """
-    # XXX You could probably save yourself a ton of time if you
-    # processed the BS/BE rows to remove their trailing commas.
-    # then you could use a method like np.genfromtext or something faster
-    # than the native csv lib.
-    def get_data(flow, pressure, t_array, ts_array, rel_bn, vent_bn, bs_count, be_count, last_t, t_delta):
-        flow, pressure, t_array, ts_array = filter_arrays(
-            flow, pressure, t_array, ts_array
-        )
-        if flow:
-            data_dict = {
-                "rel_bn": rel_bn,
-                "vent_bn": vent_bn,
-                "flow": flow,
-                "pressure": pressure,
-                "t": t_array,
-                "ts": ts_array,
-                "bs_count": bs_count,
-                "be_count": be_count,
-                "bs_time": bs_time,
-                "frame_dur": round(t_array[-1] + t_delta, 2),
-                "dt": t_delta,
-            }
-            return data_dict
-
-    if not  isinstance(descriptor, StringIO) and not "cStringIO" in str(descriptor.__class__) and not isinstance(descriptor, io.TextIOWrapper) and not isinstance(descriptor, io.BufferedReader):
-        raise ValueError("Provide a file descriptor as input! Make sure you are using a Python3 compatible descriptor such as io.open.")
-
-    spec_rel_bns = sorted(spec_rel_bns)
-    spec_vent_bns = sorted(spec_vent_bns)
-    collection_start = False
-    last_t = 0  # first data point starts at 0
-    bs_count = 0
-    be_count = 0
-    bs_time = 0.02
-    t_delta = 0.02
-    rel_ts = 0
-    vent_bn = 0
-    rel_bn = 0
-    has_bs = False
-    idx = 0
-    flow, pressure, t_array, timestamp_array = reset_arrays(None, None, None, None)
-    try:
-        descriptor = clear_descriptor_null_bytes(descriptor)
-    except UnicodeDecodeError:
-        raise BadDescriptorError('You seem to have opened a file with garbled bytes. you should open it using io.open(file, encoding="ascii", errors="ignore"')
-    reader = csv.reader(descriptor)
-    data_dict = {}
-    vent_bn_regex = re.compile("S:(\d+)")
-    descriptor.seek(0)
-    first_line = descriptor.readline()
-    bs_col, ncol, ts_1st_col, ts_1st_row = detect_version_v2(first_line)
-    if ts_1st_row:
-        abs_time = datetime.strptime(first_line.strip('\r\n'), IN_DATETIME_FORMAT)
-    descriptor.seek(0)
-
-    for row in reader:
-        try:
-            row[bs_col]
-        except IndexError:
-            continue
-        if row[bs_col].strip() == "BS":
-            collection_start = True
-            if not ignore_missing_bes and has_bs:
-                data = get_data(
-                    flow, pressure, t_array, timestamp_array, rel_bn, vent_bn, bs_count, be_count, bs_time, t_delta
-                )
-                if data:
-                    yield data
-                bs_time = round(last_t + 0.02, 2)
-            rel_ts = 0
-            bs_count += 1
-            rel_bn += 1
-            idx = 0
-            has_bs = True
-            flow, pressure, t_array, timestamp_array = reset_arrays(
-                flow, pressure, t_array, timestamp_array
-            )
-            try:
-                match = vent_bn_regex.search(row[bs_col + 1])
-            except IndexError:
-                has_bs = False
-                continue
-            if not match:
-                has_bs = False  # Don't collect data for the breath
-                continue
-            vent_bn = int(match.groups()[0])
-            if rel_bn_interval and rel_bn > rel_bn_interval[1]:
-                return
-            elif vent_bn_interval and vent_bn > vent_bn_interval[1]:
-                return
-            elif spec_rel_bns and rel_bn > spec_rel_bns[-1]:
-                return
-            elif spec_vent_bns and vent_bn > spec_vent_bns[-1]:
-                return
-            elif vent_bn_interval and not (vent_bn_interval[0] <= vent_bn <= vent_bn_interval[1]):
-                has_bs = False
-            elif rel_bn_interval and not (rel_bn_interval[0] <= rel_bn <= rel_bn_interval[1]):
-                has_bs = False
-            elif spec_rel_bns and (rel_bn not in spec_rel_bns):
-                has_bs = False
-            elif spec_vent_bns and (vent_bn not in spec_vent_bns):
-                has_bs = False
-        elif row[bs_col].strip() == "BE":
-            be_count += 1
-            has_bs = False
-            data = get_data(
-                flow, pressure, t_array, timestamp_array, rel_bn, vent_bn, bs_count, be_count, bs_time, t_delta
-            )
-            if data:
-                yield data
-            bs_time = round(last_t + 0.02, 2)
-            rel_ts = 0
-        else:
-            if collection_start:  # if there is stray data at the top of the file
-                # make sure data is correctly formed
-                try:
-                    float(row[ncol - 2])
-                    float(row[ncol - 1])
-                except (IndexError, ValueError):
-                    continue
-                last_t = round(last_t + .02, 2)
-
-            if not has_bs:
-                continue
-            try:
-                flow[idx] = round(float(row[ncol - 2]), 2)
-                pressure[idx] = round(float(row[ncol - 1]), 2)
-            except (IndexError, ValueError):
-                continue
-            t_array[idx] = round(rel_ts, 2)
-            if ts_1st_col:
-                timestamp_array[idx] = row[0]
-            elif ts_1st_row:
-                timestamp_array[idx] = (abs_time + timedelta(seconds=last_t)).strftime(OUT_DATETIME_FORMAT)
-            rel_ts = round(rel_ts + t_delta, 2)
-            idx += 1
+    pb840 = PB840File(descriptor)
+    return pb840.extract_raw(ignore_missing_bes, rel_bn_interval, vent_bn_interval, spec_rel_bns, spec_vent_bns)
 
 
 def real_time_extractor(descriptor,
@@ -232,177 +206,11 @@ def real_time_extractor(descriptor,
                         spec_rel_bns=[],
                         spec_vent_bns=[]):
     """
-    The exact same functionality as extract_raw, except this method
-    returns a list of breaths and is also able to update timestamp based on
-    whether/not a new timestamp is found in file. Both of these functions are
-    necessary for real time TOR.
-
-    In future, we might be able to consolidate this function with extract_raw,
-    but for now this works fine and there is no need to expend the engineering
-    effort
-
-    :param descriptor: The file descriptor to use
-    :param ignore_missing_bes: boolean whether or not to ignore missing BEs in the data (False if we want to use breaths without a BE, True otherwise)
-    :param rel_bn_interval: The relative [start, end] interval for the data
-    :param vent_bn_interval: The vent bn [start, end] interval for the data
-    :param spec_rel_bns: The specific relative bns that we want eg: [1, 10, 20]
-    :param spec_vent_bns: The specific vent bns that we want eg: [1, 10, 20]
+    Deprecated method for extracting VWD. Newer implementations should look at
+    using a specific ventilator class like PB840.extract_raw
     """
-    def get_data(flow, pressure, t_array, ts_array, rel_bn, vent_bn, bs_count, be_count, last_t, t_delta):
-        flow, pressure, t_array, ts_array = filter_arrays(
-            flow, pressure, t_array, ts_array
-        )
-        if flow:
-            data_dict = {
-                "rel_bn": rel_bn,
-                "vent_bn": vent_bn,
-                "flow": flow,
-                "pressure": pressure,
-                "t": t_array,
-                "ts": ts_array,
-                "bs_count": bs_count,
-                "be_count": be_count,
-                "bs_time": bs_time,
-                "frame_dur": t_array[-1] + t_delta,
-                "dt": t_delta,
-            }
-            return data_dict
-
-    if not isinstance(descriptor, StringIO) and not "cStringIO" in str(descriptor.__class__) and not isinstance(descriptor, io.TextIOWrapper):
-        raise ValueError("Provide a file descriptor as input! Make sure you are using a Python3 compatible descriptor such as io.open.")
-    if (len(rel_bn_interval) == 0 and len(vent_bn_interval) == 0 and
-        len(spec_rel_bns) == 0 and len(spec_vent_bns) == 0):
-        pass
-    elif not xor(
-            xor(len(rel_bn_interval) > 0, len(vent_bn_interval) > 0),
-            xor(len(spec_rel_bns) > 0, len(spec_vent_bns) > 0)
-        ):
-        raise ValueError("You can only specify one vent or rel bn filtering option for use!")
-    spec_rel_bns = sorted(spec_rel_bns)
-    spec_vent_bns = sorted(spec_vent_bns)
-    collection_start = False
-    last_t = 0  # first data point starts at 0
-    bs_count = 0
-    be_count = 0
-    bs_time = 0.02
-    t_delta = 0.02
-    rel_ts = 0
-    vent_bn = 0
-    rel_bn = 0
-    has_bs = False
-    idx = 0
-    flow, pressure, t_array, timestamp_array = reset_arrays(None, None, None, None)
-    descriptor = clear_descriptor_null_bytes(descriptor)
-    reader = csv.reader(descriptor)
-    data_dict = {}
-    data_list = []
-    vent_bn_regex = re.compile("S:(\d+)")
-    date_search = re.compile("^20[12]\d-[01]\d-")
-    descriptor.seek(0)
-    first_line = descriptor.readline()
-
-    # Should we be more strict and now allow breaths without a TS up top?
-    bs_col, ncol, ts_1st_col, ts_1st_row = detect_version_v2(first_line)
-    if ts_1st_row:
-        abs_time = datetime.strptime(first_line.strip('\r\n'), IN_DATETIME_FORMAT)
-        start_time = abs_time
-    else:
-        raise Exception("A breath timestamp must be on first row!")
-    descriptor.seek(0)
-
-    for row in reader:
-        try:
-            row[bs_col]
-        except IndexError:
-            continue
-
-        # XXX fix bs_time! it is not accurate when we update the timestamp
-        #
-        # update abs time
-        if date_search.search(row[0]):
-            abs_time = datetime.strptime(row[0], IN_DATETIME_FORMAT)
-            last_t = 0
-            bs_time = round((abs_time + timedelta(seconds=0.02) - start_time).total_seconds(), 2)
-            continue
-
-        if row[bs_col].strip() == "BS":
-            collection_start = True
-            if not ignore_missing_bes and has_bs:
-                data = get_data(
-                    flow, pressure, t_array, timestamp_array, rel_bn, vent_bn, bs_count, be_count, bs_time, t_delta
-                )
-                if data:
-                    data_list.append(data)
-                bs_time = round((abs_time + timedelta(seconds=last_t) - start_time).total_seconds(), 2)
-            rel_ts = 0
-            bs_count += 1
-            rel_bn += 1
-            idx = 0
-            has_bs = True
-            flow, pressure, t_array, timestamp_array = reset_arrays(
-                flow, pressure, t_array, timestamp_array
-            )
-            try:
-                match = vent_bn_regex.search(row[bs_col + 1])
-            except IndexError:
-                has_bs = False
-                continue
-            if not match:
-                has_bs = False  # Don't collect data for the breath
-                continue
-            vent_bn = int(match.groups()[0])
-            if rel_bn_interval and rel_bn > rel_bn_interval[1]:
-                break
-            elif vent_bn_interval and vent_bn > vent_bn_interval[1]:
-                break
-            elif spec_rel_bns and rel_bn > spec_rel_bns[-1]:
-                break
-            elif spec_vent_bns and vent_bn > spec_vent_bns[-1]:
-                break
-            elif vent_bn_interval and not (vent_bn_interval[0] <= vent_bn <= vent_bn_interval[1]):
-                has_bs = False
-            elif rel_bn_interval and not (rel_bn_interval[0] <= rel_bn <= rel_bn_interval[1]):
-                has_bs = False
-            elif spec_rel_bns and (rel_bn not in spec_rel_bns):
-                has_bs = False
-            elif spec_vent_bns and (vent_bn not in spec_vent_bns):
-                has_bs = False
-        elif row[bs_col].strip() == "BE":
-            be_count += 1
-            has_bs = False
-            data = get_data(
-                flow, pressure, t_array, timestamp_array, rel_bn, vent_bn, bs_count, be_count, bs_time, t_delta
-            )
-            if data:
-                data_list.append(data)
-            bs_time = round((abs_time + timedelta(seconds=last_t) - start_time).total_seconds(), 2)
-            rel_ts = 0
-        else:
-            if collection_start:  # if there is stray data at the top of the file
-                # make sure data is correctly formed
-                try:
-                    float(row[ncol - 2])
-                    float(row[ncol - 1])
-                except (IndexError, ValueError):
-                    continue
-                last_t = round(last_t + .02, 2)
-
-            if not has_bs:
-                continue
-            try:
-                flow[idx] = round(float(row[ncol - 2]), 2)
-                pressure[idx] = round(float(row[ncol - 1]), 2)
-            except (IndexError, ValueError):
-                continue
-            t_array[idx] = round(rel_ts, 2)
-            if ts_1st_col:
-                timestamp_array[idx] = row[0]
-            elif ts_1st_row:
-                timestamp_array[idx] = (abs_time + timedelta(seconds=last_t)).strftime(OUT_DATETIME_FORMAT)
-            rel_ts = round(rel_ts + t_delta, 2)
-            idx += 1
-
-    return data_list
+    pb840 = PB840File(descriptor)
+    return pb840.extract_raw(ignore_missing_bes, rel_bn_interval, vent_bn_interval, spec_rel_bns, spec_vent_bns)
 
 
 def fmt_as_csv(array):
@@ -544,7 +352,7 @@ def process_breath_file(descriptor,
     pressure = []
     processed_rows = []
     for breath in generator:
-        timestamp = None if not breath['ts'] else breath['ts'][0]
+        timestamp = breath['abs_bs']
         processed_row = [breath['rel_bn'], breath['vent_bn'], timestamp, breath['bs_time'], breath['frame_dur'], breath['dt'], cur_idx]
         for i, val in enumerate(breath['flow']):
             flow.append(breath['flow'][i])
@@ -561,8 +369,8 @@ def read_processed_file(raw_file, processed_file):
     After a file has been processed into its constituent parts, this function will then
     re-read it and output it in similar format to extract_raw
     """
-    raw = np.load(raw_file)
-    processed = np.load(processed_file)
+    raw = np.load(raw_file, allow_pickle=True)
+    processed = np.load(processed_file, allow_pickle=True)
     for breath_info in processed:
         # for processed it will be structured as 'rel_bn', 'vent_bn', 'abs_bs', 'bs_time', 'frame_dur', 'dt', 'start_idx', 'end_idx'
         end_idx = int(breath_info[-1])

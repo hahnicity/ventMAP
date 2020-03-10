@@ -109,22 +109,10 @@ def get_production_breath_meta(breath, tve_pos=True, calc_tv3=False, to_series=F
     RR = 60 / (frame_dur)
     rel_time_at_x0 = bs_time + iTime
 
-    if 'ts' in breath and breath['ts']:
-        ts = breath["ts"]
-        abs_time_at_x0 = ts[x0_index]
-        abs_time_at_BS = ts[0]
-        abs_time_at_BE = ts[-1]
-    elif 'abs_bs' in breath and breath['abs_bs']:
-        try:
-            abs_time_at_x0 = (datetime.strptime(breath['abs_bs'], OUT_DATETIME_FORMAT) + timedelta(seconds=round(x0_index * .02, 2))).strftime(OUT_DATETIME_FORMAT)
-            abs_time_at_BS = breath['abs_bs']
-        except ValueError:
-            abs_time_at_x0 = (parser.parse(breath['abs_bs']) + timedelta(seconds=round(x0_index * .02, 2))).strftime(OUT_DATETIME_FORMAT)
-            abs_time_at_BS = parser.parse(breath['abs_bs']).strftime(OUT_DATETIME_FORMAT)
-        try:
-            abs_time_at_BE = (datetime.strptime(breath['abs_bs'], OUT_DATETIME_FORMAT) + timedelta(seconds=frame_dur - dt)).strftime(OUT_DATETIME_FORMAT)
-        except ValueError:
-            abs_time_at_BE = (parser.parse(breath['abs_bs']) + timedelta(seconds=frame_dur - dt)).strftime(OUT_DATETIME_FORMAT)
+    if breath['abs_bs']:
+        abs_time_at_x0 = (datetime.strptime(breath['abs_bs'], OUT_DATETIME_FORMAT) + timedelta(seconds=round(x0_index * .02, 2))).strftime(OUT_DATETIME_FORMAT)
+        abs_time_at_BS = breath['abs_bs']
+        abs_time_at_BE = (datetime.strptime(breath['abs_bs'], OUT_DATETIME_FORMAT) + timedelta(seconds=frame_dur - dt)).strftime(OUT_DATETIME_FORMAT)
     else:
         abs_time_at_x0 = "-"
         abs_time_at_BS = "-"
