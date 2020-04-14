@@ -217,8 +217,12 @@ def extract_raw(descriptor,
             except (IndexError, ValueError):
                 continue
             t_array[idx] = round(rel_ts, 2)
+
             if ts_1st_col:
-                timestamp_array[idx] = row[0]
+                try:
+                    timestamp_array[idx] = datetime.strptime(row[0], '%Y-%m-%d %H:%M:%S.%f').strftime(OUT_DATETIME_FORMAT)
+                except:
+                    timestamp_array[idx] = datetime.strptime(row[0][:-3], '%Y-%m-%d %H:%M:%S.%f').strftime(OUT_DATETIME_FORMAT)
             elif ts_1st_row:
                 timestamp_array[idx] = (abs_time + timedelta(seconds=last_t)).strftime(OUT_DATETIME_FORMAT)
             rel_ts = round(rel_ts + t_delta, 2)
@@ -396,7 +400,10 @@ def real_time_extractor(descriptor,
                 continue
             t_array[idx] = round(rel_ts, 2)
             if ts_1st_col:
-                timestamp_array[idx] = row[0]
+                try:
+                    timestamp_array[idx] = datetime.strptime(row[0], '%Y-%m-%d %H:%M:%S.%f').strftime(OUT_DATETIME_FORMAT)
+                except:
+                    timestamp_array[idx] = datetime.strptime(row[0][:-3], '%Y-%m-%d %H:%M:%S.%f').strftime(OUT_DATETIME_FORMAT)
             elif ts_1st_row:
                 timestamp_array[idx] = (abs_time + timedelta(seconds=last_t)).strftime(OUT_DATETIME_FORMAT)
             rel_ts = round(rel_ts + t_delta, 2)

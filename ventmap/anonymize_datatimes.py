@@ -128,6 +128,8 @@ def main():
     elif match:
         patient = match.groups()[0]
 
+    shift_hours = randint(min_years*24*365, max_years*24*365)
+    new_patient_id = randint(0, max_patient_id)
     if args.shift_file:
         shift_data = pd.read_csv(args.shift_file)
         patient_data = shift_data[shift_data.patient == patient]
@@ -147,9 +149,6 @@ def main():
 
         while new_patient_id in new_patient_ids:
             new_patient_id = randint(0, max_patient_id)
-    else:
-        shift_hours = randint(min_years*24*365, max_years*24*365)
-        new_patient_id = randint(0, max_patient_id)
 
     print("shifting patient: {} data by hours: {} new id: {}".format(patient, shift_hours, new_patient_id))
 
