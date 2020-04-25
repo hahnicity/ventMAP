@@ -106,21 +106,28 @@ class File(object):
         places_to_change = []
         with open(self.filename, 'r') as f:
             file_data = f.read()
-            # XXX a regex findall might be more efficient?? Maybe test.
+            cur_idx = 0
             for line in file_data.split('\n'):
+                # XXX code can be simplified here because each if block is basically the
+                # same thing.
                 if text_date_pattern.search(line):
                     match_found = True
-                    dt = datetime.strptime(line, regular_datetime_time_pattern)
+                    str_dt = text_date_pattern.search(line).groups()[0]
+                    dt = datetime.strptime(str_dt, regular_datetime_time_pattern)
                     new_dt = dt + timedelta(hours=self.shift_hours)
-                    places_to_change.append((file_data.index(line), new_dt.strftime(regular_datetime_time_pattern)))
+                    data_idx = cur_idx + line.index(str_dt)
+                    places_to_change.append((data_idx, new_dt.strftime(regular_datetime_time_pattern)))
                 # shifting data formatted in 3 column syntax takes a bit of time because there
-                # are just so many places the script has to modify
+                # are just so many places the script has to modify.
                 elif three_col_regex_search_pattern.search(line):
                     match_found = True
                     str_dt = three_col_regex_search_pattern.search(line).groups()[0]
                     dt = datetime.strptime(str_dt, three_col_datetime_pattern)
                     new_dt = dt + timedelta(hours=self.shift_hours)
-                    places_to_change.append((file_data.index(line), new_dt.strftime(regular_datetime_time_pattern)))
+                    data_idx = cur_idx + line.index(str_dt)
+                    places_to_change.append((data_idx, new_dt.strftime(regular_datetime_time_pattern)))
+
+                cur_idx = len(line) + cur_idx + 1  # +1 because of the \n split
 
             if not match_found:
                 warn('file: {} had no matching datetime found.'.format(self.filename))
