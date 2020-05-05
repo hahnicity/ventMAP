@@ -53,12 +53,6 @@ def _get_file_breath_meta(func, file, tve_pos, ignore_missing_bes, rel_bn_interv
     for breath in extract_raw(file, ignore_missing_bes,
         rel_bn_interval=rel_bn_interval, vent_bn_interval=vent_bn_interval,
         spec_vent_bns=spec_vent_bns, spec_rel_bns=spec_rel_bns):
-        bs_count = breath['bs_count']
-        be_count = breath['be_count']
-        missing_be = bs_count - be_count
-        if (missing_be > missing_be_count_threshold) and (missing_be / float(bs_count) > missing_be_ratio_threshold):
-            return array
-
         array.append(func(breath))
 
     if not to_data_frame:

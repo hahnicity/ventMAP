@@ -38,6 +38,7 @@ class VentilatorBase(object):
             raise ValueError("Provide a file descriptor as input! Make sure you are using a Python3 compatible descriptor such as io.open.")
         self.rel_bs_time = 0
         self.abs_bs_time = None
+        self.cur_abs_time = None
         self.vent_bn = 0
         self.rel_bn = 0
         try:
@@ -70,12 +71,13 @@ class VentilatorBase(object):
             self.abs_bs_time = parser.parse(row[0])
         else:
             self.abs_bs_time = datetime.strptime(row[0], IN_DATETIME_FORMAT)
+        self.cur_abs_time = self.abs_bs_time
 
-    def set_abs_bs_time_if_bs(self, row, last_t):
+    def set_abs_bs_time_if_bs(self, row):
         if self.ts_1st_col:
             self.abs_bs_time = parser.parse(row[0]) + timedelta(seconds=self.dt)
         elif self.abs_bs_time is not None:
-            self.abs_bs_time = self.abs_bs_time + timedelta(seconds=last_t)
+            self.abs_bs_time = self.cur_abs_time + timedelta(seconds=self.dt)
 
     def extract_raw(self,
                     skip_breaths_without_be,
@@ -103,13 +105,13 @@ class VentilatorBase(object):
         """
         spec_rel_bns = sorted(spec_rel_bns)
         spec_vent_bns = sorted(spec_vent_bns)
-        collection_start = False
         # this is a var used to keep track of time incase we dont see a datetime to update us
         last_breath_time = self.dt
         has_bs = False
-        date_search = re.compile("^20[12]\d-[01]\d-")
+        date_search = re.compile("^20[12]\d-\d{2}-")
         flow, pressure, data_list = [], [], []
         vent_bn_regex = re.compile("S:(\d+)")
+        td = timedelta(seconds=self.dt)
 
         for row in self.descriptor.readlines():
             row = row.strip().split(',')
@@ -128,7 +130,7 @@ class VentilatorBase(object):
                         last_breath_time = self.dt * len(flow)
                         data_list.append(self.get_data(flow, pressure))
                 self.set_rel_bs_time(last_breath_time)
-                self.set_abs_bs_time_if_bs(row, last_breath_time)
+                self.set_abs_bs_time_if_bs(row)
                 self.rel_bn += 1
                 has_bs = True
                 flow, pressure = [], []
@@ -166,6 +168,8 @@ class VentilatorBase(object):
                     data_list.append(self.get_data(flow, pressure))
                     flow, pressure = [], []
             else:
+                if self.cur_abs_time is not None:
+                    self.cur_abs_time += td
                 if not has_bs:
                     continue
                 try:

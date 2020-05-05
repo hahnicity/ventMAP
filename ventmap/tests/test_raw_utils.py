@@ -92,8 +92,10 @@ def test_extract_raw_list():
     assert len(list_) == 3
     assert list_[0]['vent_bn'] == 65426
     assert list_[1]['vent_bn'] == 65427
+    assert list_[2]['vent_bn'] == 65428
     assert '2017-01-01 01-01-01' in list_[0]['abs_bs']
     assert '2017-01-01 01-02-01' in list_[1]['abs_bs']
+    assert '2017-01-01 01-03-01' in list_[2]['abs_bs']
     for var in ['flow', 'pressure']:
         for breath in list_:
             assert breath[var]
@@ -187,7 +189,7 @@ def test_new_er_and_old_er_same():
         b_match = copy(gen_old[i])
         assert b_match['rel_bn'] == b['rel_bn']
         assert b_match['vent_bn'] == b['vent_bn']
-        assert b_match['ts'][0] == b['abs_bs'], (b_match['ts'][0], b['abs_bs'], b_match['vent_bn'])
+        assert b_match['ts'][0] == b['abs_bs'], (i, b_match['ts'][0], b['abs_bs'], b_match['vent_bn'])
         del b_match['t']
         del b_match['ts']
         del b_match['bs_count']
