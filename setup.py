@@ -17,7 +17,7 @@ setup(name='ventmap',
       ],
       entry_points={
           'console_scripts': [
-              'anonymize_datetimes=ventmap.anonymize_datetimes:main',
+              'anonymize_datetimes=ventmap.anonymize_datatimes:main',
               'add_timestamp_to_vent_file=ventmap.add_timestamp_to_file:main',
               'clear_null_bytes=ventmap.clear_null_bytes:main',
               'cut_breath_section=ventmap.cut_breath_section:main',

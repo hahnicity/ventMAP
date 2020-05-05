@@ -32,10 +32,12 @@ import pandas as pd
 
 old_file_date_pattern = re.compile(r'(\d{4}-\d{2}-\d{2}__\d{2}:\d{2}:\d{2}.\d{9})')
 text_date_pattern = re.compile(r'(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}.\d{6})')
+three_col_regex_search_pattern = re.compile(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{6})')
 file_date_pattern = text_date_pattern
 patient_pattern = r'(\w{4}RPI\w{10}[-_]?\d?)'
 old_file_datetime_time_pattern = '%Y-%m-%d__%H:%M:%S.%f'
-data_datetime_time_pattern = '%Y-%m-%d-%H-%M-%S.%f'
+regular_datetime_time_pattern = '%Y-%m-%d-%H-%M-%S.%f'
+three_col_datetime_pattern = '%Y-%m-%d %H:%M:%S.%f'
 csv_datetime_time_pattern = '%Y-%m-%d %H-%M-%S'
 npy_datetime_time_pattern = '%Y-%m-%d %H-%M-%S.%f'
 max_patient_id = 10000
@@ -55,61 +57,113 @@ class NoPatientError(Exception):
     pass
 
 
-def get_name_filepath(filename, shift_hours, patient, new_patient_id):
-    try:
-        file_dt = file_date_pattern.search(filename).groups()[0]
-        new_file_dt = datetime.strptime(file_dt, data_datetime_time_pattern) + timedelta(hours=shift_hours)
-    except:
-        file_dt = old_file_date_pattern.search(filename).groups()[0]
-        new_file_dt = datetime.strptime(file_dt[:-3], old_file_datetime_time_pattern) + timedelta(hours=shift_hours)
+class Filename(object):
+    def __init__(self, filename, shift_hours, patient_id, new_patient_id, only_shift_date):
+        self.filename = filename
+        self.shift_hours = shift_hours
+        self.only_shift_date = only_shift_date
+        self.patient_id = patient_id
+        self.new_patient_id = new_patient_id
 
-    new_file_dt = new_file_dt.strftime(data_datetime_time_pattern)
-    idx = filename.index(file_dt)
-    new_filename = (os.path.basename(filename[0:idx] + new_file_dt + filename[idx+len(file_dt):])).replace(patient, str(new_patient_id))
-    return os.path.join('/tmp/', new_filename)
-
-
-def process_csv_file(filename, shift_hours, patient, new_patient_id):
-    match_found = False
-    places_to_change = []
-    with open(filename, 'r') as f:
-        file_data = f.read()
-        # XXX a regex findall might be more efficient?? Maybe test.
-        for line in file_data.split('\n'):
-            if text_date_pattern.search(line):
-                match_found = True
-                dt = datetime.strptime(line, data_datetime_time_pattern)
-                new_dt = dt + timedelta(hours=shift_hours)
-                places_to_change.append((file_data.index(line), new_dt.strftime(data_datetime_time_pattern)))
-
-        if not match_found:
-            warn('file: {} had no matching datetime found.'.format(filename))
-            return False
-
-        for index, new_dt in places_to_change:
-            file_data = file_data[0:index] + new_dt + file_data[index+len(new_dt):]
-
-        new_filename = get_name_filepath(filename, shift_hours, patient, new_patient_id)
-        with open(new_filename, 'w') as new_file:
-            new_file.write(file_data)
-        return True
-
-
-def process_npy_file(filename, shift_hours, patient, new_patient_id):
-    processed = np.load(filename)
-    abs_bs_loc = 2
-    for i, arr in enumerate(processed):
-        abs_bs = arr[abs_bs_loc]
+    def shift_file_datetime(self):
         try:
-            converted = datetime.strptime(abs_bs, npy_datetime_time_pattern) + timedelta(hours=shift_hours)
-        except ValueError:
-            warn('file: {} had improperly formated datetime information.'.format(filename))
-            return False
+            file_dt = file_date_pattern.search(self.filename).groups()[0]
+            new_file_dt = datetime.strptime(file_dt, regular_datetime_time_pattern) + timedelta(hours=self.shift_hours)
+        except AttributeError:
+            file_dt = old_file_date_pattern.search(self.filename).groups()[0]
+            new_file_dt = datetime.strptime(file_dt[:-3], old_file_datetime_time_pattern) + timedelta(hours=self.shift_hours)
+        new_file_dt = new_file_dt.strftime(regular_datetime_time_pattern)
+        idx = self.filename.index(file_dt)
+        return os.path.basename(self.filename[0:idx] + new_file_dt + self.filename[idx+len(file_dt):])
 
-        processed[i][abs_bs_loc] = converted.strftime(npy_datetime_time_pattern)
-    new_filename = get_name_filepath(filename, shift_hours, patient, new_patient_id)
-    np.save(new_filename, processed)
-    return True
+    def get_new_filename_shift_all(self):
+        new_filename = self.shift_file_datetime().replace(patient, str(new_patient_id))
+        return os.path.join('/tmp/', new_filename)
+
+    def get_new_filename_by_only_shifting_date(self):
+        new_filename = self.shift_file_datetime()
+        return os.path.join('/tmp/', new_filename)
+
+    def get_new_filename(self):
+        if self.only_shift_date:
+            return self.get_new_filename_by_only_shifting_date()
+        elif not self.only_shift_date and self.patient_id is not None and self.new_patient_id is not None:
+            return self.get_new_filename_shift_all()
+        else:
+            raise NoPatientError('No patient id was found with filename {}'.format(self.filename))
+
+
+class File(object):
+    def __init__(self, filename, shift_hours, patient_id, new_patient_id, only_shift_date):
+        self.filename = filename
+        self.shift_hours = shift_hours
+        self.patient_id = patient_id
+        self.new_patient_id = new_patient_id
+        self.only_shift_date = only_shift_date
+
+    def process_csv_file(self):
+        match_found = False
+        places_to_change = []
+        with open(self.filename, 'r') as f:
+            file_data = f.read()
+            cur_idx = 0
+            for line in file_data.split('\n'):
+                # XXX code can be simplified here because each if block is basically the
+                # same thing.
+                if text_date_pattern.search(line):
+                    match_found = True
+                    str_dt = text_date_pattern.search(line).groups()[0]
+                    dt = datetime.strptime(str_dt, regular_datetime_time_pattern)
+                    new_dt = dt + timedelta(hours=self.shift_hours)
+                    data_idx = cur_idx + line.index(str_dt)
+                    places_to_change.append((data_idx, new_dt.strftime(regular_datetime_time_pattern)))
+                # shifting data formatted in 3 column syntax takes a bit of time because there
+                # are just so many places the script has to modify.
+                elif three_col_regex_search_pattern.search(line):
+                    match_found = True
+                    str_dt = three_col_regex_search_pattern.search(line).groups()[0]
+                    dt = datetime.strptime(str_dt, three_col_datetime_pattern)
+                    new_dt = dt + timedelta(hours=self.shift_hours)
+                    data_idx = cur_idx + line.index(str_dt)
+                    places_to_change.append((data_idx, new_dt.strftime(regular_datetime_time_pattern)))
+
+                cur_idx = len(line) + cur_idx + 1  # +1 because of the \n split
+
+            if not match_found:
+                warn('file: {} had no matching datetime found.'.format(self.filename))
+                return False, self.filename
+
+            for index, new_dt in places_to_change:
+                file_data = file_data[0:index] + new_dt + file_data[index+len(new_dt):]
+
+            filename_obj = Filename(self.filename, self.shift_hours, self.patient_id, self.new_patient_id, self.only_shift_date)
+            new_filename = filename_obj.get_new_filename()
+            with open(new_filename, 'w') as new_file:
+                new_file.write(file_data)
+            return True, new_filename
+
+    def process_npy_file(self):
+        processed = np.load(self.filename)
+        abs_bs_loc = 2
+        for i, arr in enumerate(processed):
+            abs_bs = arr[abs_bs_loc]
+            try:
+                converted = datetime.strptime(abs_bs, npy_datetime_time_pattern) + timedelta(hours=self.shift_hours)
+            except ValueError:
+                warn('file: {} had improperly formated datetime information.'.format(self.filename))
+                return False, self.filename
+
+            processed[i][abs_bs_loc] = converted.strftime(npy_datetime_time_pattern)
+        filename_obj = Filename(self.filename, self.shift_hours, self.patient_id, self.new_patient_id, self.only_shift_date)
+        new_filename = filename_obj.get_new_filename()
+        np.save(new_filename, processed)
+        return True, new_filename
+
+    def process_file(self):
+        if self.filename.endswith('.csv'):
+            return self.process_csv_file()
+        elif self.filename.endswith('.processed.npy'):
+            return self.process_npy_file()
 
 
 def main():
@@ -120,15 +174,25 @@ def main():
     mutex.add_argument('--new-cohort-file', help='make a new cohort file with patient data. Allows us to track patients that we\'ve already processed. The difference between this and --shift-file is that that shift-file is already made, whereas this argument presumes no prior thought from the user')
     parser.add_argument('--rm-old-dir', help='remove old (non-anonymized) directory', action='store_true')
     parser.add_argument('--new-dir', help='specify a new directory path to save patient data. If not specified then script will save data into 1 level above where patient directory is located')
+    parser.add_argument('--only-shift-date', action='store_true', help='only shift the date of the filename and not the patient. Helpful in cases where the patient name is already anonymized')
     args = parser.parse_args()
 
     match = re.search(patient_pattern, args.patient_dir)
-    if not match:
-        raise NoPatientError('Patient pattern not found for directory {}. Check pattern or maybe update this script'.format(args.patient_dir))
+    if args.only_shift_date:
+        patient = None
+    elif not match:
+        raise NoPatientError('Patient pattern not found for directory {}. Did you mean to shift the files without a patient identifier?'.format(args.patient_dir))
     elif match:
         patient = match.groups()[0]
 
-    if args.shift_file:
+
+    shift_hours = randint(min_years*24*365, max_years*24*365)
+
+    if args.only_shift_date:
+        new_patient_id = None
+
+    elif args.shift_file:
+        new_patient_id = randint(0, max_patient_id)
         shift_data = pd.read_csv(args.shift_file)
         patient_data = shift_data[shift_data.patient == patient]
         if len(patient_data) != 1:
@@ -137,6 +201,7 @@ def main():
         new_patient_id = patient_data.iloc[0].new_patient_id
 
     elif args.new_cohort_file:
+        new_patient_id = randint(0, max_patient_id)
         try:
             cohort_data = pd.read_csv(args.new_cohort_file)
             new_patient_ids = cohort_data.new_patient_id.unique()
@@ -147,9 +212,6 @@ def main():
 
         while new_patient_id in new_patient_ids:
             new_patient_id = randint(0, max_patient_id)
-    else:
-        shift_hours = randint(min_years*24*365, max_years*24*365)
-        new_patient_id = randint(0, max_patient_id)
 
     print("shifting patient: {} data by hours: {} new id: {}".format(patient, shift_hours, new_patient_id))
 
@@ -161,15 +223,12 @@ def main():
     new_files_to_move = []
     remove_files_from_arr = []
     for filename in files:
-        if filename.endswith('.csv'):
-            processsed_ok = process_csv_file(filename, shift_hours, patient, new_patient_id)
-        elif filename.endswith('.processed.npy'):
-            processsed_ok = process_npy_file(filename, shift_hours, patient, new_patient_id)
+        file_obj = File(filename, shift_hours, patient, new_patient_id, args.only_shift_date)
+        processsed_ok, new_filename = file_obj.process_file()
 
         if not processsed_ok:
             remove_files_from_arr.append(filename)
         else:
-            new_filename = get_name_filepath(filename, shift_hours, patient, new_patient_id)
             new_files_to_move.append(new_filename)
 
     for file in remove_files_from_arr:

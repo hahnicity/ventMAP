@@ -201,7 +201,7 @@ and are documented here:
 | abs_time_at_BE | date | absolute time that breath ended |
 | rel_time_at_x0 | N/A | Legacy column |
 | rel_time_at_BE | N/A | Legacy column |
-| min_pressure | mmH20 | minimum pressure for the breath |
+| min_pressure | mmH20 | minimum pressure for the inspiratory section of the breath |
 
 ### Experimental Breath Metadata
 We also have some pieces of more experimental information that have been developed since our 2017 paper.

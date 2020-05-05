@@ -22,7 +22,7 @@ from ventmap.raw_utils import extract_raw
 
 
 def write_breath_meta(array, outfile):
-    with open(outfile, "w") as out:
+    with open(outfile, "wb") as out:
         writer = csv.writer(out)
         writer.writerows(array)
 
