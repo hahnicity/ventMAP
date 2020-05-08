@@ -210,6 +210,7 @@ def find_mean_flow_from_pef(flow, pef, t_offset):
 
 
 # 2015_06_22
+# XXX this needs to be simplified to remove t and replace with dt
 def findx0(t, waveform, time_threshold):
     """
     Finds where waveform crosses 0 (changes from + to -)
@@ -398,7 +399,8 @@ def isFlat(data, epsilon = 1, y=0):
     return flatLengths, maxFlat, sumFlat
 
 
-def find_x0s_multi_algorithms(flow, t, last_t, dt):
+# XXX this needs to be simplified to remove t
+def find_x0s_multi_algorithms(flow, t, dt):
     """
     Calculate x0s based on multiple algorithms
 
@@ -416,7 +418,7 @@ def find_x0s_multi_algorithms(flow, t, last_t, dt):
     if x01s!=[]: #if x01 has multiple values, use the first value to mark end of breath
         x01index=t.index(x01s[0])
     else:# if breath doesn't cross 0 (eg. double trigger, nubbin)
-        x01index = t.index(last_t) #???perhaps we should set to beginning of breath?
+        x01index = t.index(t[-1]) #???perhaps we should set to beginning of breath?
 
     #index #2
     pos,neg,FlowLargePos,FlowLargeNeg,x02index = findx02(flow,dt)
@@ -430,7 +432,8 @@ def find_x0s_multi_algorithms(flow, t, last_t, dt):
     return x0_indices_dict
 
 
-def x0_heuristic(x0_indices_dict,BN,t):
+# XXX this needs to be simplified to remove t and replace with dt
+def x0_heuristic(x0_indices_dict,t):
     """
     Determine which x0 to use
     20160503 V1 Original, from TOR 3.5.1
@@ -449,6 +452,7 @@ def x0_heuristic(x0_indices_dict,BN,t):
         x0_index=x01index
 
     return iTime,x0_index
+
 
 def find_slope_from_minf_to_zero(t, flow, pef, t_offset=0):
     """

@@ -91,11 +91,9 @@ def get_production_breath_meta(breath, tve_pos=True, calc_tv3=False, to_series=F
 
     # find the one x0 and calculations based off x0
     # ---------------------------------------------
-    x0_indices_dict = SAM.find_x0s_multi_algorithms(
-        flow=flow,t=rel_time_array,last_t=rel_time_array[-1],dt=dt)
+    x0_indices_dict = SAM.find_x0s_multi_algorithms(flow, rel_time_array, dt)
 
-    iTime, x0_index=SAM.x0_heuristic(
-        x0_indices_dict=x0_indices_dict, BN=rel_bn, t=rel_time_array)
+    iTime, x0_index=SAM.x0_heuristic(x0_indices_dict, rel_time_array)
 
     iTime = round(iTime, 2)
     eTime = round(frame_dur - iTime, 2)
