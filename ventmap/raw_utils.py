@@ -368,13 +368,16 @@ def process_breath_file(descriptor,
     np.save(raw_filename, np.array([flow, pressure]).transpose())
 
 
-def read_processed_file(raw_file, processed_file):
+def read_processed_file(raw_file, processed_file=None):
     """
     After a file has been processed into its constituent parts, this function will then
     re-read it and output it in similar format to extract_raw
+
+    :param raw_file: filename for the raw numpy pickled file. Should have a file prefix of '.raw.npy'
+    :param processed_file: stale argument around for backwards compatibility sake
     """
     raw = np.load(raw_file, allow_pickle=True)
-    processed = np.load(processed_file, allow_pickle=True)
+    processed = np.load(raw_file.replace('.raw.npy', '.processed.npy'), allow_pickle=True)
     for breath_info in processed:
         # for processed it will be structured as 'rel_bn', 'vent_bn', 'abs_bs', 'bs_time', 'frame_dur', 'dt', 'start_idx', 'end_idx'
         end_idx = int(breath_info[-1])

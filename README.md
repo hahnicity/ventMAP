@@ -114,12 +114,12 @@ from io import open
 from ventmap.raw_utils import process_breath_file, read_processed_file
 
 # This function will output 2 files. The first will just contain raw breath data
-# the other will contain higher level processed data
+# the other will contain higher level processed data. In order to re-load the
+# saved data we just need to specify the path to the raw file
 process_breath_file(open(<filepath>), False, 'new_filename')
 raw_filepath_name = 'new_filename.raw.npy'
-processed_filepath_name = 'new_filename.processed.npy'
 
-for breath in read_processed_file(raw_filepath_name, processed_filepath_name):
+for breath in read_processed_file(raw_filepath_name):
     # breath data is output in dictionary format
     flow, pressure = breath['flow'], breath['pressure']
 ```

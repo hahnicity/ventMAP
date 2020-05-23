@@ -77,7 +77,7 @@ class Filename(object):
         return os.path.basename(self.filename[0:idx] + new_file_dt + self.filename[idx+len(file_dt):])
 
     def get_new_filename_shift_all(self):
-        new_filename = self.shift_file_datetime().replace(patient, str(new_patient_id))
+        new_filename = self.shift_file_datetime().replace(self.patient_id, str(self.new_patient_id))
         return os.path.join('/tmp/', new_filename)
 
     def get_new_filename_by_only_shifting_date(self):
