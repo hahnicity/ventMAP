@@ -108,7 +108,7 @@ class VentilatorBase(object):
         # this is a var used to keep track of time incase we dont see a datetime to update us
         last_breath_time = self.dt
         has_bs = False
-        date_search = re.compile("^20[12]\d-\d{2}-")
+        date_search = re.compile("^2\d{3}-\d{2}-")
         flow, pressure, data_list = [], [], []
         vent_bn_regex = re.compile("S:(\d+)")
         td = timedelta(seconds=self.dt)

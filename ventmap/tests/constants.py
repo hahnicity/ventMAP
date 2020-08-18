@@ -30,3 +30,4 @@ PT0149_CSV = join(dirname(__file__), "samples", "0149_2016-02-17-08-38-13_1.csv_
 PT0149_SUBDIR = join(dirname(__file__), "samples", "0149")
 PT0149_BREATH_META = join(PT0149_SUBDIR, "0149_2016-02-17-08-38-13_1_v5_1_0__breath_meta.csv_test")
 PT0149_BREATH_META_200TO300 = join(dirname(__file__), "samples", "0149_2016-02-17-08-38-13_1_v5_1_0__breath_meta.csv_test")
+FAILING_ABS_BS = join(dirname(__file__), "samples", "failing_abs_bs_data.csv.test")

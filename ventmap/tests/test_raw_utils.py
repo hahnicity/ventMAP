@@ -137,6 +137,15 @@ def test_raw_utils_with_spec_rel_and_vent_bns3():
     assert not has_breaths
 
 
+def test_failing_abs_bs():
+    gen = extract_raw(open(FAILING_ABS_BS), False)
+    has_breaths = False
+    for b in gen:
+        has_breaths = True
+        assert b['abs_bs'] is not None
+    assert has_breaths
+
+
 def test_read_processed_file():
     out_raw = 'tmp.test.raw.npy'
     out_proc = 'tmp.test.processed.npy'
