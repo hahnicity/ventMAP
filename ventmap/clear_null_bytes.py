@@ -11,7 +11,7 @@ from io import BufferedReader, open, StringIO
 
 def clear_descriptor_null_bytes(descriptor):
     try:
-        descriptor_text = unicode(descriptor.read().replace('\x00', ''))
+        descriptor_text = descriptor.read().replace('\x00', '').decode('utf-8', 'ignore')
     except NameError:  # python 3
         descriptor_text = str(descriptor.read()).replace('\x00', '')
     reader = StringIO(descriptor_text)
