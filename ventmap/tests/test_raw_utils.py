@@ -181,6 +181,8 @@ def test_bad_unicode_error():
 
 
 def test_bad_unicode_error_fails_with_no_encoding():
+    # this test fails on python 2.7 but succeeds on python3.7. Could this be because of
+    # differences in how open works between the two versions?
     try:
         gen = extract_raw(open(BAD_UNICODE_ERROR, 'rb'), False)
         for b in gen:
