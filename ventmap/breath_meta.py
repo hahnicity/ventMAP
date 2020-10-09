@@ -259,10 +259,13 @@ def get_experimental_breath_meta(breath, tve_pos=True):
     """
     Add experimental breath meta information to the original breath meta info
     """
-    rel_time_array = breath["t"]
+    dt = breath["dt"]
     flow = breath["flow"]
     pressure = breath["pressure"]
-    dt = breath["dt"]
+    if 't' not in breath:
+        rel_time_array = [i * dt for i in range(len(flow))]
+    else:
+        rel_time_array = breath["t"]
     # set last data point as last value of breath
 
     non_experimental = get_production_breath_meta(breath, tve_pos)
