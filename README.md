@@ -176,8 +176,8 @@ and are documented here:
 | iTime | seconds | amount of time elapsed on inspiration |
 | eTime | seconds | amount of time elapsed on expiration |
 | inst_RR | breaths/min | total amount of time elapsed on the breath divided by 60 |
-| tvi | ml/second | amount of air breathed in |
-| tve | ml/second | amount of air breathed out |
+| tvi | ml | amount of air breathed in |
+| tve | ml | amount of air breathed out |
 | tve:tvi ratio | N/A | ratio of tve divided by tvi |
 | maxF | L/min | maximum flow on the breath |
 | minF | L/min | minimum flow on the breath |
