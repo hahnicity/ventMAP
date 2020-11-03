@@ -459,8 +459,12 @@ def find_slope_from_minf_to_zero(t, flow, pef, t_offset=0):
     We can take a surrogate time constant measure by calculating the
     slope from min flow to 0.
     """
-    min_idx = flow.index(pef)
-    flow_min = (t[min_idx], min_idx, pef)
+    t_off_idx = int(t_offset / 0.02)
+    min_idx = flow.index(pef) + t_off_idx
+    try:
+        flow_min = (t[min_idx], min_idx, flow[min_idx])
+    except IndexError:
+        return np.nan
     flow_zero = (0, 0, sys.maxsize)  # (time, idx, flow)
 
     flow_threshold = 2
