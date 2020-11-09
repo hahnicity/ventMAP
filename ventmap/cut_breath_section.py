@@ -28,6 +28,8 @@ def cut_breath_section(descriptor, bn_start, bn_end):
     descriptor.seek(0)
     reader = csv.reader(descriptor)
     for line in reader:
+        if not line:
+            continue
         if line[bs_col].strip() == "BS":
             bn += 1
         if bn == bn_start:
