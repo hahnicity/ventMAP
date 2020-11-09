@@ -1,15 +1,21 @@
 from argparse import ArgumentParser
 import csv
-from operator import itemgetter
+from datetime import datetime
 from io import open, StringIO
+from operator import itemgetter
 
 from ventmap.detection import detect_version_v2
 from ventmap.clear_null_bytes import clear_null_bytes
 
 
-def cut_breath_section(descriptor, bn_start, bn_end):
+def cut_breath_section(descriptor, bn_start, bn_end, start_abs_bs):
     """
     Cut up a file by relative breath number
+
+    :param descriptor: file  descriptor for file to chunk up
+    :param bn_start: starting (inclusive) relative breath number
+    :param bn_end: ending (exclusive) relative breath number
+    :param start_abs_bs: because this function cuts off the absolute breath start timestamp we can provide a new one for the file if we need. If we dont care we can just provide None
     """
     try:
         bn_start = int(bn_start)
@@ -21,6 +27,11 @@ def cut_breath_section(descriptor, bn_start, bn_end):
         )
     i = 0
     bn = 0  # on APL the relative breath number starts at 1
+    if start_abs_bs:
+        try:
+            datetime.strptime(start_abs_bs, '%Y-%m-%d-%H-%M-%S.%f')
+        except:
+            raise Exception('start_abs_bs must be in format %Y-%m-%d-%H-%M-%S.%f')
     record_lines = False
     end_next = False
     lines_to_keep = []
@@ -41,7 +52,9 @@ def cut_breath_section(descriptor, bn_start, bn_end):
         if bn == bn_end and line[bs_col].strip() == "BE":
             descriptor.seek(0)
             lines = descriptor.read().split("\n")
-            return StringIO("\n".join(list(itemgetter(*lines_to_keep)(lines))))
+            text = "\n".join(list(itemgetter(*lines_to_keep)(lines)))
+            text = start_abs_bs + '\n' + text if start_abs_bs else text
+            return StringIO(text)
 
         i += 1
     else:
@@ -57,7 +70,7 @@ def cut_breath_section_wrapper(raw_file, out_file, relBN_start, relBN_end):
     """
 
     descriptor = clear_null_bytes(raw_file)
-    stringio = cut_breath_section(descriptor, relBN_start, relBN_end)
+    stringio = cut_breath_section(descriptor, relBN_start, relBN_end, None)
     open(out_file, 'w').write(stringio.read())
 
 
@@ -69,7 +82,7 @@ def main():
     parser.add_argument("-o", "--outfile", required=True, help="name of file to output results to")
     args = parser.parse_args()
     descriptor = clear_null_bytes(args.file)
-    stringio = cut_breath_section(descriptor, args.bn_start, args.bn_end)
+    stringio = cut_breath_section(descriptor, args.bn_start, args.bn_end, None)
     open(args.outfile, "w").write(stringio.read())
 
 
