@@ -66,16 +66,22 @@ class VentilatorBase(object):
     def set_rel_bs_time(self, last_t):
         self.rel_bs_time = self.rel_bs_time + last_t
 
+    def try_parse_1st_col_ts(self, ts):
+        try:
+            self.abs_bs_time = parser.parse(ts)
+        except:
+            self.abs_bs_time = datetime.strptime(ts, IN_DATETIME_FORMAT)
+
     def set_abs_bs_time(self, row):
         if self.ts_1st_col:
-            self.abs_bs_time = parser.parse(row[0])
+            self.try_parse_1st_col_ts(row[0])
         else:
             self.abs_bs_time = datetime.strptime(row[0], IN_DATETIME_FORMAT)
         self.cur_abs_time = self.abs_bs_time
 
     def set_abs_bs_time_if_bs(self, row):
         if self.ts_1st_col:
-            self.abs_bs_time = parser.parse(row[0]) + timedelta(seconds=self.dt)
+            self.try_parse_1st_col_ts(row[0])
         elif self.abs_bs_time is not None:
             self.abs_bs_time = self.cur_abs_time + timedelta(seconds=self.dt)
 
@@ -97,7 +103,7 @@ class VentilatorBase(object):
             ....
         }
 
-        :param skip_breaths_without_be: boolean whether or not to skip breaths without BE. False for no, True for yes
+        :param skip_breaths_without_be: boolean whether or not to skip breaths without BE. False for don't skip them, True for skip them
         :param rel_bn_interval: The relative [start, end] interval for the data
         :param vent_bn_interval: The vent bn [start, end] interval for the data
         :param spec_rel_bns: The specific relative bns that we want eg: [1, 10, 20]
@@ -177,6 +183,11 @@ class VentilatorBase(object):
                     pressure.append(round(float(row[self.ncol - 1]), 2))
                 except (IndexError, ValueError):
                     continue
+        else:
+            if not skip_breaths_without_be:
+                if len(flow) > 0:
+                    last_breath_time = self.dt * len(flow)
+                    data_list.append(self.get_data(flow, pressure))
 
         return data_list
 

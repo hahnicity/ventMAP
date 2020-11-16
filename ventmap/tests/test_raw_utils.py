@@ -8,6 +8,8 @@ from ventmap.raw_utils import BadDescriptorError, extract_raw, PB840File, proces
 from ventmap.tests.constants import *
 from ventmap.tests.raw_utils_legacy import extract_raw as extract_raw_legacy
 
+open_func = lambda f: open(f, encoding='ascii', errors='ignore')
+
 
 def test_extract_raw_sunny_day():
     # To ensure everything is ok
@@ -54,7 +56,7 @@ def test_raw_utils_3_columns():
     f = open(RAW_UTILS_3_COLUMNS_TEST)
     generator = extract_raw(f, False)
     has_data = False
-    assert len(generator) == 60, len(generator)
+    assert len(generator) == 61, len(generator)
 
 
 def test_ensure_things_not_double_counter():
@@ -194,17 +196,17 @@ def test_bad_unicode_error_fails_with_no_encoding():
 def test_new_er_and_old_er_same():
     gen_old = list(extract_raw_legacy(open(RAW_UTILS_TEST2), False))
     gen_new = list(PB840File(open(RAW_UTILS_TEST2)).extract_raw(False))
-    assert len(gen_old) == len(gen_new)
+    assert len(gen_old)+1 == len(gen_new)
 
-    for i, b in enumerate(gen_new):
-        b_match = copy(gen_old[i])
+    for i, b in enumerate(gen_old):
+        b_match = copy(gen_new[i])
         assert b_match['rel_bn'] == b['rel_bn']
         assert b_match['vent_bn'] == b['vent_bn']
-        assert b_match['ts'][0] == b['abs_bs'], (i, b_match['ts'][0], b['abs_bs'], b_match['vent_bn'])
-        del b_match['t']
-        del b_match['ts']
-        del b_match['bs_count']
-        del b_match['be_count']
+        assert b_match['abs_bs'] == b['ts'][0], (i, b_match['abs_bs'], b['ts'][0], b_match['vent_bn'])
+        del b['t']
+        del b['ts']
+        del b['bs_count']
+        del b['be_count']
         assert b_match['frame_dur'] == b['frame_dur']
         assert b_match['flow'] == b['flow']
         assert b_match['pressure'] == b['pressure']
@@ -216,19 +218,26 @@ def test_new_er_and_old_er_same_3col():
     gen_old = list(extract_raw_legacy(open(RAW_UTILS_3_COLUMNS_TEST), False))
     gen_new = PB840File(open(RAW_UTILS_3_COLUMNS_TEST)).extract_raw(False)
 
-    for i, b in enumerate(gen_new):
-        b_match = copy(gen_old[i])
+    for i, b in enumerate(gen_old):
+        b_match = copy(gen_new[i])
         assert b_match['rel_bn'] == b['rel_bn']
         assert b_match['vent_bn'] == b['vent_bn']
         # We aren't testing that abs bs stamps are the same because the two functions do things
         # slightly differently that doesn't change the behavior of the code in a negative way
         # as long as the other things are OK then we're fine.
-        del b_match['t']
-        del b_match['ts']
-        del b_match['bs_count']
-        del b_match['be_count']
+        del b['t']
+        del b['ts']
+        del b['bs_count']
+        del b['be_count']
         assert b_match['frame_dur'] == b['frame_dur']
         assert b_match['flow'] == b['flow']
         assert b_match['pressure'] == b['pressure']
         assert b_match['bs_time'] == b['bs_time'], (b_match['bs_time'], b['bs_time'])
         assert b_match['dt'] == b['dt']
+
+
+def test_that_we_get_breath_at_end_when_no_skip_be():
+    gen = extract_raw(open_func(BE_NOT_AT_END), False)
+    assert gen[-1]['vent_bn'] == 14635
+    assert gen[-1]['rel_bn'] == 14
+    assert len(gen[-1]['flow']) == 13
