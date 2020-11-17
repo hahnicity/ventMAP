@@ -97,8 +97,9 @@ from io import open
 from ventmap.raw_utils import extract_raw
 
 # create generator that will iterate through file. Specify False to ensure that
-# breaths without BS/BE markers will be dropped. If you say True, then breaths
-# without BS/BE will be kept
+# breaths without BE markers will be kept. If you say True, then breaths
+# without BE will be dropped. This can occasionally happen due to software error
+# or because a breath was cutoff at the end of a file.
 generator = extract_raw(open(<filepath to vent data>), False)
 for breath in generator:
     # breath data is output in dictionary format
