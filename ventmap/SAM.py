@@ -70,6 +70,42 @@ def calc_pressure_itime_from_front(t, pressure, pip, peep, frac):
     return t[last_idx] - t[first_idx]
 
 
+def _check_for_plat(flow, pressure, dt, min_time, flow_bound, flow_bound_any_or_all, break_if_found):
+    """
+    Main logic for plat checking. Shouldn't be used directly, either use check_if_plat_occurs to just
+    get True/False response, or calc_inspiratory_plateau for both a check and plateau value
+    """
+    if flow_bound_any_or_all not in ['any', 'all']:
+        raise Exception('flow_bound_any_or_all can only be set to "any" or "all"')
+    flow = np.array(flow)
+    min_points = int(min_time / dt)
+    found_plat = False
+    skip_this_many = 10
+    plat_idxs = []
+    found_plat = False
+
+    for idx, _ in enumerate(pressure[skip_this_many:-min_points]):
+        idx = idx + skip_this_many
+        is_plat = (np.logical_and(flow[idx:idx+min_points] < flow_bound, flow[idx:idx+min_points] > -flow_bound)).all()
+        if is_plat and break_if_found:
+            return True, [idx]
+        elif is_plat:
+            found_plat = True
+            plat_idxs.append(idx)
+
+        if found_plat and not is_plat:
+            return True, plat_idxs
+        # Maybe flow can be 0 but not be plat if pt is on heavy sedation
+        # where the patient is not ready to exhale. This happens occassionally in practice
+        # but I'm not sure for the reasons. This is just a theory of mine. Doctor would
+        # probably know more
+        below_flow_tol = getattr((flow[idx:idx+min_points] < -flow_bound), flow_bound_any_or_all)()
+        # patient is probably exhaling, so just quit
+        if below_flow_tol:
+            break
+    return False, []
+
+
 def check_if_plat_occurs(flow, pressure, dt, min_time=.5, flow_bound=.2, flow_bound_any_or_all='any'):
     """
     Check if there is an inspiratory plateau pressure for a breath. Works by iterating over a breath
@@ -91,31 +127,11 @@ def check_if_plat_occurs(flow, pressure, dt, min_time=.5, flow_bound=.2, flow_bo
                                   all can be far too sensitive for use if you dont want to have to
                                   go check through a bunch of false positives.
     """
-    if flow_bound_any_or_all not in ['any', 'all']:
-        raise Exception('flow_bound_any_or_all can only be set to "any" or "all"')
-    flow = np.array(flow)
-    min_points = int(min_time / dt)
-    found_plat = False
-    skip_this_many = 10
-
-    for idx, _ in enumerate(pressure[skip_this_many:-min_points]):
-        idx = idx + skip_this_many
-        is_plat = (np.logical_and(flow[idx:idx+min_points] < flow_bound, flow[idx:idx+min_points] > -flow_bound)).all()
-        if is_plat:
-            return True
-        # Maybe flow can be 0 but not be plat if pt is on heavy sedation
-        # where the patient is not ready to exhale. This happens occassionally in practice
-        # but I'm not sure for the reasons. This is just a theory of mine. Doctor would
-        # probably know more
-        below_flow_tol = getattr((flow[idx:idx+min_points] < -flow_bound), flow_bound_any_or_all)()
-        # patient is probably exhaling, so just quit
-        if below_flow_tol:
-            break
-    return False
+    found_plat, idxs = _check_for_plat(flow, pressure, dt, min_time, flow_bound, flow_bound_any_or_all, True)
+    return found_plat
 
 
-# XXX need to update this method to stay current with the one above
-def calc_inspiratory_plateau(flow, pressure, dt, min_time=.4, flow_bound=0.5):
+def calc_inspiratory_plateau(flow, pressure, dt, min_time=0.5, flow_bound=0.2, take_last_n_points=5):
     """
     Calculate the inspiratory plateau pressure for a breath
 
@@ -124,29 +140,15 @@ def calc_inspiratory_plateau(flow, pressure, dt, min_time=.4, flow_bound=0.5):
     :param dt: time delta between obs
     :param min_time: the minimum amount of time a plat must be held for
     :param flow_bound: if any points go below 0 within tolerance of this value, quit
+    :param take_last_n_points: number of final points to take in the last parts of the plateau to average for a plat pressure
     """
-    flow = np.array(flow)
     min_points = int(min_time / dt)
-    min_points_on_calc = 4
-    found_plat = False
-    skip_this_many = 10
-
-    for idx, _ in enumerate(pressure[skip_this_many:-min_points]):
-        idx = idx + skip_this_many
-        is_plat = (np.logical_and(flow[idx:idx+min_points] < flow_bound, flow[idx:idx+min_points] > -flow_bound)).all()
-        if is_plat:
-            found_plat = True
-        # This logic may be a bit confusing. What it means is, we found a plat, but
-        # we want to run until the end of the plateau, because the true plateau
-        # doesn't happen until the end of the insp. pause
-        if found_plat and not is_plat:
-            return sum(pressure[idx-1:idx-1+min_points_on_calc]) / min_points_on_calc
-
-        below_flow_tol = (flow[idx:idx+min_points] < -flow_bound).any()
-        # patient is probably exhaling, and theres no insp pause
-        if below_flow_tol:
-            break
-    return np.nan
+    found_plat, idxs = _check_for_plat(flow, pressure, dt, min_time, flow_bound, 'any', False)
+    if found_plat:
+        min_idx = (idxs[-1-take_last_n_points] if len(idxs) >= take_last_n_points else idxs[0]) + min_points
+        max_idx = (idxs[-1]) + min_points
+        return True, sum(pressure[min_idx:max_idx]) / len(pressure[min_idx:max_idx])
+    return False, None
 
 
 def calc_expiratory_plateau(flow, pressure):
