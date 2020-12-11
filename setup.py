@@ -6,13 +6,14 @@ from setuptools import setup, find_packages
 setup(name='ventmap',
       author='Gregory Rehm',
       author_email='grehm87@gmail.com',
-      version="1.4.7",
+      version="1.5.0",
       description='Ventilator Multi-Analytic Platform for analysis of ventilator waveform data',
       python_requires=">=2.7",
       packages=find_packages(exclude=["*tests*"]),
       install_requires=[
           'numpy',
           'pandas',
+          'prettytable',
           'scipy',
       ],
       entry_points={

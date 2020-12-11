@@ -14,7 +14,7 @@ def cut_breath_section(descriptor, bn_start, bn_end, start_abs_bs):
 
     :param descriptor: file  descriptor for file to chunk up
     :param bn_start: starting (inclusive) relative breath number
-    :param bn_end: ending (exclusive) relative breath number
+    :param bn_end: ending (inclusive) relative breath number
     :param start_abs_bs: because this function cuts off the absolute breath start timestamp we can provide a new one for the file if we need. If we dont care we can just provide None
     """
     try:

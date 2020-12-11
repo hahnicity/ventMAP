@@ -70,16 +70,29 @@ def calc_pressure_itime_from_front(t, pressure, pip, peep, frac):
     return t[last_idx] - t[first_idx]
 
 
-def check_if_plat_occurs(flow, pressure, dt, min_time=.2, flow_bound=.5):
+def check_if_plat_occurs(flow, pressure, dt, min_time=.5, flow_bound=.2, flow_bound_any_or_all='any'):
     """
-    Check if there is an inspiratory plateau pressure for a breath
+    Check if there is an inspiratory plateau pressure for a breath. Works by iterating over a breath
+    and then forward checking to see if a plat has occurred in time period since an observation. The
+    criteria for possible plat are that the flow is within some bound for a minimum amount of time.
+    On PB-840 the minimum amount of time used to certify a plat is about 0.5 seconds, so this is the
+    default for min_time. flow_bound is set to 0.2 because the PB-840 should provide 0 flow, but the
+    flow sensors can be accurate within about 10%. So a flow_bound of 0.2 covers this margin of error
+    plus a bit more. The algo quits if either any or all flow points are below a flow bound. This
+    setting is configurable.
 
     :param flow: array vals of flow measurements in ml/s
     :param pressure: array vals of pressure measurements from vent
     :param dt: time delta between obs
     :param min_time: the minimum amount of time a plat must be held for
-    :param flow_bound: if any points go below 0 within tolerance of this value, quit
+    :param flow_bound: if any/all points go below 0 within tolerance of this value
+    :param flow_bound_any_or_all: If any or all points go below flow bound then quit. By default
+                                  we set this to any because it is much more specific than any is.
+                                  all can be far too sensitive for use if you dont want to have to
+                                  go check through a bunch of false positives.
     """
+    if flow_bound_any_or_all not in ['any', 'all']:
+        raise Exception('flow_bound_any_or_all can only be set to "any" or "all"')
     flow = np.array(flow)
     min_points = int(min_time / dt)
     found_plat = False
@@ -90,13 +103,18 @@ def check_if_plat_occurs(flow, pressure, dt, min_time=.2, flow_bound=.5):
         is_plat = (np.logical_and(flow[idx:idx+min_points] < flow_bound, flow[idx:idx+min_points] > -flow_bound)).all()
         if is_plat:
             return True
-        below_flow_tol = (flow[idx:idx+min_points] < -flow_bound).all()
-        # patient is probably exhaling, and theres no insp pause
+        # Maybe flow can be 0 but not be plat if pt is on heavy sedation
+        # where the patient is not ready to exhale. This happens occassionally in practice
+        # but I'm not sure for the reasons. This is just a theory of mine. Doctor would
+        # probably know more
+        below_flow_tol = getattr((flow[idx:idx+min_points] < -flow_bound), flow_bound_any_or_all)()
+        # patient is probably exhaling, so just quit
         if below_flow_tol:
             break
     return False
 
 
+# XXX need to update this method to stay current with the one above
 def calc_inspiratory_plateau(flow, pressure, dt, min_time=.4, flow_bound=0.5):
     """
     Calculate the inspiratory plateau pressure for a breath
