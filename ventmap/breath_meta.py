@@ -48,6 +48,7 @@ def _get_file_breath_meta(func, file, tve_pos, ignore_missing_bes, rel_bn_interv
         array = [EXPERIMENTAL_META_HEADER]
     else:
         array = [META_HEADER]
+
     # XXX add logic for accepting a raw_utils array
     for breath in extract_raw(file, ignore_missing_bes,
         rel_bn_interval=rel_bn_interval, vent_bn_interval=vent_bn_interval,
