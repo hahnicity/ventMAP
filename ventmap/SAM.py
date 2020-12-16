@@ -145,8 +145,13 @@ def calc_inspiratory_plateau(flow, pressure, dt, min_time=0.5, flow_bound=0.2, t
     min_points = int(min_time / dt)
     found_plat, idxs = _check_for_plat(flow, pressure, dt, min_time, flow_bound, 'any', False)
     if found_plat:
-        min_idx = (idxs[-1-take_last_n_points] if len(idxs) > take_last_n_points else idxs[0]) + min_points
-        max_idx = (idxs[-1]) + min_points
+        if len(idxs) > 1:
+            min_idx = (idxs[-1-take_last_n_points] if len(idxs) > take_last_n_points else idxs[0]) + min_points
+            max_idx = (idxs[-1]) + min_points
+        else:
+            min_idx = idxs[0]
+            max_idx = idxs[0] + min_points
+
         return True, sum(pressure[min_idx:max_idx]) / len(pressure[min_idx:max_idx])
     return False, None
 
