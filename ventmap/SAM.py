@@ -131,7 +131,7 @@ def check_if_plat_occurs(flow, pressure, dt, min_time=.5, flow_bound=.2, flow_bo
     return found_plat
 
 
-def calc_inspiratory_plateau(flow, pressure, dt, min_time=0.5, flow_bound=0.2, take_last_n_points=5):
+def calc_inspiratory_plateau(flow, pressure, dt, min_time=0.5, flow_bound=0.2, flow_bound_any_or_all='any', take_last_n_points=5):
     """
     Calculate the inspiratory plateau pressure for a breath
 
@@ -140,10 +140,14 @@ def calc_inspiratory_plateau(flow, pressure, dt, min_time=0.5, flow_bound=0.2, t
     :param dt: time delta between obs
     :param min_time: the minimum amount of time a plat must be held for
     :param flow_bound: if any points go below 0 within tolerance of this value, quit
+    :param flow_bound_any_or_all: If any or all points go below flow bound then quit. By default
+                                  we set this to any because it is much more specific than any is.
+                                  all can be far too sensitive for use if you dont want to have to
+                                  go check through a bunch of false positives.
     :param take_last_n_points: number of final points to take in the last parts of the plateau to average for a plat pressure
     """
     min_points = int(min_time / dt)
-    found_plat, idxs = _check_for_plat(flow, pressure, dt, min_time, flow_bound, 'any', False)
+    found_plat, idxs = _check_for_plat(flow, pressure, dt, min_time, flow_bound, flow_bound_any_or_all, False)
     if found_plat:
         if len(idxs) > 1:
             min_idx = (idxs[-1-take_last_n_points] if len(idxs) > take_last_n_points else idxs[0]) + min_points
