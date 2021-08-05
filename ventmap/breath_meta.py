@@ -49,11 +49,15 @@ def _get_file_breath_meta(func, file, tve_pos, ignore_missing_bes, rel_bn_interv
     else:
         array = [META_HEADER]
 
-    # XXX add logic for accepting a raw_utils array
-    for breath in extract_raw(file, ignore_missing_bes,
-        rel_bn_interval=rel_bn_interval, vent_bn_interval=vent_bn_interval,
-        spec_vent_bns=spec_vent_bns, spec_rel_bns=spec_rel_bns):
-        array.append(func(breath))
+    # case that the file is just a raw_utils array of breaths
+    if isinstance(file, list):
+        for b in file:
+            array.append(func(b))
+    else:  # case the file is a file descriptor
+        for breath in extract_raw(file, ignore_missing_bes,
+            rel_bn_interval=rel_bn_interval, vent_bn_interval=vent_bn_interval,
+            spec_vent_bns=spec_vent_bns, spec_rel_bns=spec_rel_bns):
+            array.append(func(breath))
 
     if not to_data_frame:
         return array

@@ -8,18 +8,8 @@ import pandas as pd
 
 from ventmap.breath_meta import get_file_breath_meta, get_file_experimental_breath_meta, get_production_breath_meta
 from ventmap.constants import META_HEADER, META_HEADER_TOR_3
-from ventmap.raw_utils import extract_raw, process_breath_file, read_processed_file
-from ventmap.tests.constants import (
-    BREATH_META1,
-    BREATH_META1_CONTROL,
-    JIMMY_TEST,
-    PT0149_BREATH_META,
-    PT0149_CSV,
-    PT0149_BREATH_META_200TO300,
-    RAW_UTILS_TEST2,
-    WITH_TIMESTAMP,
-    WITH_TIMESTAMP_CONTROL
-)
+from ventmap.raw_utils import extract_raw, HundredHzFile, process_breath_file, read_processed_file
+from ventmap.tests.constants import *
 from ventmap.tests.custom_compare import assert_dfs_equal
 from ventmap.rounding_rules import force_round_df, IE_recalc_with_rounding, force_round_df2
 
@@ -71,6 +61,15 @@ class TestBreathMeta(object):
 
     def test_files_with_timestamps(self):
         self.breath_meta_helper(WITH_TIMESTAMP, WITH_TIMESTAMP_CONTROL, False)
+
+    def test_hundred_hz_limited_fields(self):
+        # doing this for debraj running into problem
+        f = open(ARDS_AND_COPD)
+        gen = HundredHzFile(f).extract_raw(True)
+        meta = get_file_breath_meta(gen, to_data_frame=True)
+        for i, row in meta.iterrows():
+            assert gen[i]['bs_time'] == row.BS
+            assert row.BE == gen[i]['bs_time'] + gen[i]['frame_dur']-0.01
 
     def test_to_series_works(self):
         for i, breath in enumerate(extract_raw(open(RAW_UTILS_TEST2), False)):
