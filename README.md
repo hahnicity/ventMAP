@@ -92,19 +92,35 @@ data cannot actually be temporally linked with other types of patient data in th
 For reading ventilator data:
 
 ```python
-from io import open
+from io import open  # this import ensures python 2/3 compatibility
 
-from ventmap.raw_utils import extract_raw
+from ventmap.raw_utils import PB840File
 
 # create generator that will iterate through file. Specify False to ensure that
 # breaths without BE markers will be kept. If you say True, then breaths
 # without BE will be dropped. This can occasionally happen due to software error
 # or because a breath was cutoff at the end of a file.
-generator = extract_raw(open(<filepath to vent data>), False)
+generator = PB840File(open(<filepath to vent data>)).extract_raw(False)
 for breath in generator:
     # breath data is output in dictionary format
     flow, pressure = breath['flow'], breath['pressure']
 ```
+
+This process only works if you are using the Puritan Bennet 840. However if you have a different
+ventilator then you can utilize this too. VentMap currently supports 100 Hz data input files in
+same format as the PB-840.
+
+```python
+from io import open
+
+from ventmap.raw_utils import HundredHzFile
+
+generator = HundredHzFile(open(<filepath to vent data>)).extract_raw(False)
+for breath in generator:
+    # breath data is output in dictionary format
+    flow, pressure = breath['flow'], breath['pressure']
+```
+
 
 If you want to preprocess a breath file for later usage, or if you intend to
 process it again then it is suggested to use the `process_breath_file` method
@@ -145,9 +161,9 @@ from io import open
 # production breath meta refers to clinician validated algorithms
 # experimental breath meta refers to non-validated algorithms
 from ventmap.breath_meta import get_production_breath_meta, get_experimental_breath_meta
-from ventmap.raw_utils import extract_raw, read_processed_file
+from ventmap.raw_utils import PB840File, read_processed_file
 
-generator = extract_raw(open(<filepath to vent data>), False)
+generator = PB840File(open(<filepath to vent data>)).extract_raw(False)
 # OR
 generator = read_processed_file(<raw file>, <processed data file>)
 
