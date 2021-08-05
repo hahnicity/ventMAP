@@ -4,7 +4,7 @@ import os
 
 from nose.tools import assert_dict_equal, assert_list_equal, assert_raises, eq_
 
-from ventmap.raw_utils import BadDescriptorError, extract_raw, PB840File, process_breath_file, read_processed_file, real_time_extractor
+from ventmap.raw_utils import BadDescriptorError, extract_raw, HundredHzFile, PB840File, process_breath_file, read_processed_file, real_time_extractor
 from ventmap.tests.constants import *
 from ventmap.tests.raw_utils_legacy import extract_raw as extract_raw_legacy
 
@@ -241,3 +241,15 @@ def test_that_we_get_breath_at_end_when_no_skip_be():
     assert gen[-1]['vent_bn'] == 14635
     assert gen[-1]['rel_bn'] == 14
     assert len(gen[-1]['flow']) == 13
+
+
+def test_hundred_hz():
+    f = open(ARDS_AND_COPD)
+    gen = HundredHzFile(f).extract_raw(True)
+    prev_breaths_len = 0.00
+    for i, breath in enumerate(gen):
+        assert breath['rel_bn'] == i+1
+        assert breath['frame_dur'] == len(breath['flow']) * 0.01
+        assert breath['dt'] == 0.01
+        assert breath['bs_time'] == round(0.01 + prev_breaths_len, 2), (breath['bs_time'], 0.01 + prev_breaths_len)
+        prev_breaths_len += breath['frame_dur']
