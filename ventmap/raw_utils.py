@@ -15,6 +15,7 @@ import sys
 
 import numpy as np
 import pandas as pd
+from pathlib import Path
 
 from ventmap.clear_null_bytes import clear_descriptor_null_bytes
 from ventmap.constants import IN_DATETIME_FORMAT, OUT_DATETIME_FORMAT
@@ -408,3 +409,86 @@ def read_processed_file(raw_file, processed_file=None):
             "frame_dur": float(breath_info[-4]),
             "dt": dt,
         }
+
+
+def consolidate_files(paths, ignore_missing_bes, output_dir, to_npy=True, to_csv=False):
+    """
+    Consolidate a number of previously separate files together.
+
+    :param paths: Can be a list of strs of pathlib.Path objects
+    :param ignore_missing_bes: Should we not care if BE marker exists?
+    :param output_dir: output directory to place new file(s). can be str or pathlib.Path obj
+    :param to_npy: (bool) create npy processed output
+    :param to_csv: (bool) create csv output for file in traditional format
+    """
+
+    paths = sorted(paths)
+    flow = []
+    pressure = []
+    processed_rows = []
+
+    # absolute idx for new file
+    abs_idx = 0
+    rel_bn = 1
+    bs_time = 0.02
+    prior_ts = None
+    for path in paths:
+        descriptor = io.open(str(path), errors='ignore', encoding='ascii')
+        generator = extract_raw(descriptor, ignore_missing_bes)
+        # relative idx for currently iterated file
+        for breath in generator:
+            # sanity check. If somehow the breath is malformed
+            if len(breath['flow']) != len(breath['pressure']):
+                continue
+
+            # bs_time is a bit unknown here. I can do my best with it using abs
+            # timestamps tho. The downside is that this method will error out if
+            # no timestamps are present.
+            timestamp = breath['abs_bs']
+            if prior_ts is not None:
+                bs_delta = (datetime.strptime(timestamp, OUT_DATETIME_FORMAT) - datetime.strptime(prior_ts, OUT_DATETIME_FORMAT))
+                bs_time += round(bs_delta.total_seconds(), 2)
+            processed_row = [
+                rel_bn, breath['vent_bn'], timestamp, bs_time,
+                breath['frame_dur'], breath['dt'], abs_idx
+            ]
+
+            for i, val in enumerate(breath['flow']):
+                flow.append(val)
+                pressure.append(breath['pressure'][i])
+                abs_idx += 1
+            processed_row.append(abs_idx)
+            processed_rows.append(processed_row)
+            rel_bn += 1
+            prior_ts = timestamp
+
+    output_filename = str(paths[0]).replace('.csv', '')
+
+    if to_csv:
+        output_buf = []
+        for breath_info in processed_rows:
+            rel_bn = int(breath_info[0])
+            vent_bn = int(breath_info[1])
+            end_idx = int(breath_info[-1])
+            start_idx = int(breath_info[-2])
+            flow_data = flow[start_idx:end_idx]
+            pressure_data = pressure[start_idx:end_idx]
+            abs_bs = datetime.strptime(breath_info[2], OUT_DATETIME_FORMAT).strftime(IN_DATETIME_FORMAT)
+            bs_line = ['BS', ' S:{}'.format(vent_bn), '']
+            be_line = ['BE']
+            output_buf.append([abs_bs])
+            output_buf.append(bs_line)
+            for i, val in enumerate(flow_data):
+                output_buf.append([round(val, 2), round(pressure_data[i], 2)])
+            output_buf.append(be_line)
+
+        output_path = str(Path(output_dir).joinpath(Path(output_filename+'.csv').name))
+        with open(output_path, 'w') as f:
+            writer = csv.writer(f)
+            writer.writerows(output_buf)
+
+    if to_npy:
+        raw_filename = Path(output_filename + '.raw.npy').name
+        proc_filename = Path(output_filename + '.processed.npy').name
+        np.save(str(Path(output_dir).joinpath(proc_filename)), processed_rows)
+        np.save(str(Path(output_dir).joinpath(raw_filename)), np.array([flow, pressure]).transpose())

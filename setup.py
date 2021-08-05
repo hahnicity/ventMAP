@@ -13,6 +13,7 @@ setup(name='ventmap',
       install_requires=[
           'numpy',
           'pandas',
+          'pathlib',
           'prettytable',
           'scipy',
       ],
