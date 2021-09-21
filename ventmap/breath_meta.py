@@ -43,7 +43,7 @@ def get_file_experimental_breath_meta(file, tve_pos=True, ignore_missing_bes=Tru
 
 def _get_file_breath_meta(func, file, tve_pos, ignore_missing_bes, rel_bn_interval, vent_bn_interval, to_data_frame, spec_vent_bns, spec_rel_bns):
     if isinstance(file, str):
-        file = open(file)
+        file = open(file, encoding='ascii', errors='ignore')
     if "experimental" in func.__name__:
         array = [EXPERIMENTAL_META_HEADER]
     else:
@@ -169,9 +169,18 @@ def get_production_breath_meta(breath, tve_pos=True, calc_tv3=False, to_series=F
         epAUC = 0
     else:
         epAUC = float(simps(ePressure, dx=dt))
-    maxP = max(wPressure) #max pressure for whole breath
-    maxF = max(wFlow)
-    minF = min(wFlow)
+    try:
+        maxP = max(wPressure) #max pressure for whole breath
+    except ValueError:
+        maxP = np.nan
+    try:
+        maxF = max(wFlow)
+    except ValueError:
+        maxF = np.nan
+    try:
+        minF = min(wFlow)
+    except ValueError:
+        minF = np.nan
 
 
     # TODO: will probabily move this to somewhere else
