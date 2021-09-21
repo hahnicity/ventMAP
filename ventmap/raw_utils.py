@@ -209,7 +209,7 @@ def extract_raw(descriptor,
                 spec_vent_bns=[]):
     """
     Deprecated method for extracting VWD. Newer implementations should look at
-    using a specific ventilator class like PB840.extract_raw
+    using a specific ventilator class like PB840File.extract_raw
     """
     pb840 = PB840File(descriptor)
     return pb840.extract_raw(ignore_missing_bes, rel_bn_interval, vent_bn_interval, spec_rel_bns, spec_vent_bns)
@@ -223,7 +223,7 @@ def real_time_extractor(descriptor,
                         spec_vent_bns=[]):
     """
     Deprecated method for extracting VWD. Newer implementations should look at
-    using a specific ventilator class like PB840.extract_raw
+    using a specific ventilator class like PB840File.extract_raw
     """
     pb840 = PB840File(descriptor)
     return pb840.extract_raw(ignore_missing_bes, rel_bn_interval, vent_bn_interval, spec_rel_bns, spec_vent_bns)
