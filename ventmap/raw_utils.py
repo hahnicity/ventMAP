@@ -68,6 +68,8 @@ class VentilatorBase(object):
         self.rel_bs_time = self.rel_bs_time + last_t
 
     def try_parse_1st_col_ts(self, ts):
+        if len(ts) == 29:  # if extra 3 digits on end of microsecond
+            ts = ts[:-3]
         try:
             self.abs_bs_time = parser.parse(ts)
         except:
