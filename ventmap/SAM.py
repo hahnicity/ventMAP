@@ -14,6 +14,31 @@ import numpy as np
 from scipy.integrate import simps
 
 
+def shear_transform(pressure, flow, dt):
+    """
+    Follows shear transform discussed in Stevenson et al. 2012.
+
+    The goal here is to find right shear location for the pressure curve where
+    inspiration ends.
+
+    :param pressure: array of pressure observations
+    :param flow: array of flow observations
+    :param dt: delta between observations
+    """
+    # flow min idx is included in the shear calculation
+    max_p_idx = np.argmax(pressure)
+    min_f_idx = np.argmin(flow)
+    m = (pressure[max_p_idx] - pressure[min_f_idx]) / ((min_f_idx - max_p_idx) * dt)
+    c = -m * (max_p_idx * dt)
+    t = np.arange(max_p_idx, min_f_idx+1) * dt
+    # The shoulder is found by taking the maximum of the shear transform
+    # between the point of maximum pressure and the point of minimum flow
+    try:
+        return max_p_idx + np.argmax(pressure[max_p_idx:min_f_idx+1] + m * t + c)
+    except ValueError:
+        return np.nan
+
+
 def calc_pressure_itime(t, pressure, peep, threshold):
     if peep == 0:
         return t[-1]

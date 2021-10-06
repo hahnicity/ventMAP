@@ -11,6 +11,7 @@ EXPERIMENTAL_META_HEADER = META_HEADER + [
     'vol_at_.5_sec', 'vol_at_.76_sec', 'vol_at_1_sec',
     'pressure_itime_4', 'pressure_itime_5', 'pressure_itime_6',
     'pressure_itime_by_pip5', 'pressure_itime_by_pip6', 'pressure_itime_from_front',
+    'pressure_itime_shear',
 ]
 
 # input datetime format from raw breath files

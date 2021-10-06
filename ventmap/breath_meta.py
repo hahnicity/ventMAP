@@ -310,6 +310,7 @@ def get_experimental_breath_meta(breath, tve_pos=True):
     pressure_itime_pip5 = SAM.calc_pressure_itime_by_pip(rel_time_array, pressure, PIP, 5)
     pressure_itime_pip6 = SAM.calc_pressure_itime_by_pip(rel_time_array, pressure, PIP, 6)
     pressure_itime_from_front = SAM.calc_pressure_itime_from_front(rel_time_array, pressure, PIP, peep, .4)
+    shear_p_itime = SAM.shear_transform(pressure, flow, dt) * dt
 
     # The array indices go like this
     #
@@ -324,11 +325,13 @@ def get_experimental_breath_meta(breath, tve_pos=True):
     # 39: dyn_compliance, 40: vol_at_05, 41: vol_at_076, 42: vol_at_1,
     # 43: pressure_itime4, 44: pressure_itime5, 45: pressure_itime6,
     # 46: pressure_itime_pip5, 47: pressure_itime_by_pip6, 48: pressure_itime_from_front
+    # 49: pressure_itime_shear,
     return non_experimental + [
         pef_to_zero, pef_plus_16_to_zero,
         mean_flow_from_pef, dyn_compliance, vol_at_05,
         vol_at_076, vol_at_1, pressure_itime4, pressure_itime5, pressure_itime6,
         pressure_itime_pip5, pressure_itime_pip6, pressure_itime_from_front,
+        shear_p_itime,
     ]
 
 
