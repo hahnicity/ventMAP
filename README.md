@@ -4,6 +4,20 @@ Open source multi-purpose ventilator analytics library for use analyzing ventila
 Currently only data output from the Purittan Bennet 840 (PB-840) is supported, but we welcome
 contributions to support addition of other ventilators as well.
 
+## Citing
+If you make use of this library in your own work please cite our work :bowtie:.
+
+    @article{adams2017development,
+      title={Development and validation of a multi-algorithm analytic platform to detect off-target mechanical ventilation},
+      author={Adams, Jason Y and Lieng, Monica K and Kuhn, Brooks T and Rehm, Greg B and Guo, Edward C and Taylor, Sandra L and Delplanque, Jean-Pierre and Anderson, Nicholas R},
+      journal={Scientific reports},
+      volume={7},
+      number={1},
+      pages={14980},
+      year={2017},
+      publisher={Nature Publishing Group}
+    }
+
 ## Motivation
 
 So you've been collecting data from some ventilators in your hospital or wherever, and you
@@ -175,6 +189,28 @@ for breath in generator:
     experimental_breath_meta = get_experimental_breath_meta(breath)
 ```
 
+### Consolidating Files
+
+If you have a bunch of files that are fragments and you'd like to merge them together
+then you can consolidate them together into a new .csv or .npy file.
+
+```python
+from ventmap.raw_utils import consolidate_files
+
+file_paths = ['/path/to/file1.csv', '/path/to/file2.csv', ...]
+output_dir = '/path/to/output'
+
+# Provide False in second argument if we need to have BE markers
+# outputs files to single npy file
+consolidate_files(file_paths, False, output_dir)
+
+# output to files to single csv and npy file
+consolidate_files(file_paths, False, output_dir, to_csv=True)
+
+# output to single csv file
+consolidate_files(file_paths, False, output_dir, to_npy=False, to_csv=True)
+```
+
 ### Main Breath Metadata
 
 The breath metadata are processed pieces of clinically relevant data that are derived from the raw ventilator waveform
@@ -281,17 +317,3 @@ for breath in generator:
     # .02 is the sampling rate for the PB-840 corresponding with 1 obs every .02 seconds
     did_plat_occur = check_if_plat_occurs(flow, pressure, .02)
 ```
-
-## Citing
-If you make use of this library in your own work please cite our work.
-
-    @article{adams2017development,
-      title={Development and validation of a multi-algorithm analytic platform to detect off-target mechanical ventilation},
-      author={Adams, Jason Y and Lieng, Monica K and Kuhn, Brooks T and Rehm, Greg B and Guo, Edward C and Taylor, Sandra L and Delplanque, Jean-Pierre and Anderson, Nicholas R},
-      journal={Scientific reports},
-      volume={7},
-      number={1},
-      pages={14980},
-      year={2017},
-      publisher={Nature Publishing Group}
-    }
