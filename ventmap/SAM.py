@@ -28,7 +28,10 @@ def shear_transform(pressure, flow, dt):
     # flow min idx is included in the shear calculation
     max_p_idx = np.argmax(pressure)
     min_f_idx = np.argmin(flow)
-    m = (pressure[max_p_idx] - pressure[min_f_idx]) / ((min_f_idx - max_p_idx) * dt)
+    try:
+        m = (pressure[max_p_idx] - pressure[min_f_idx]) / ((min_f_idx - max_p_idx) * dt)
+    except IndexError:  # super rare, but can happen if pressure array is not same size as flow array
+        return np.nan
     c = -m * (max_p_idx * dt)
     t = np.arange(max_p_idx, min_f_idx+1) * dt
     # The shoulder is found by taking the maximum of the shear transform
