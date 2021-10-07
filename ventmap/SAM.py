@@ -25,6 +25,8 @@ def shear_transform(pressure, flow, dt):
     :param flow: array of flow observations
     :param dt: delta between observations
     """
+    if len(pressure) == 0 or len(flow) == 0:
+        return np.nan
     # flow min idx is included in the shear calculation
     max_p_idx = np.argmax(pressure)
     min_f_idx = np.argmin(flow)
