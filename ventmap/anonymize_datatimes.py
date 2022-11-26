@@ -34,7 +34,7 @@ old_file_date_pattern = re.compile(r'(\d{4}-\d{2}-\d{2}__\d{2}:\d{2}:\d{2}.\d{9}
 text_date_pattern = re.compile(r'(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}.\d{6})')
 three_col_regex_search_pattern = re.compile(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{6})')
 file_date_pattern = text_date_pattern
-patient_pattern = r'(\w{4}RPI\w{10}[-_]?\d?)'
+patient_pattern = r'(\w{4}RPI\w{2})'
 old_file_datetime_time_pattern = '%Y-%m-%d__%H:%M:%S.%f'
 regular_datetime_time_pattern = '%Y-%m-%d-%H-%M-%S.%f'
 three_col_datetime_pattern = '%Y-%m-%d %H:%M:%S.%f'
@@ -176,7 +176,8 @@ def main():
     parser.add_argument('--new-dir', help='specify a new directory path to save patient data. If not specified then script will save data into 1 level above where patient directory is located')
     parser.add_argument('--only-shift-date', action='store_true', help='only shift the date of the filename and not the patient. Helpful in cases where the patient name is already anonymized')
     args = parser.parse_args()
-
+    
+    print(" Start anonymizaton ... ")
     match = re.search(patient_pattern, args.patient_dir)
     if args.only_shift_date:
         patient = None
