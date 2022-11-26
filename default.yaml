@@ -1,3 +1,5 @@
-patient_dir: "../unanonymized_data/unanon_70/generalization_dataset/experiment1/all_data/raw/*/"
-new_dir: "../anonymized_data/anon_70/experiment1/all_data/raw"
-info: "../anonymized_data/anon_70/info.csv"
+raw_patient_dir: "/Users/work/Desktop/dataset/unanonymized_data/unanon_70/generalization_dataset/experiment1/all_data/raw/*/"
+meta_patient_dir: "/Users/work/Desktop/dataset/unanonymized_data/unanon_70/generalization_dataset/experiment1/all_data/meta/*/"
+new_dir: "/Users/work/Desktop/dataset/anonymized_data/anon_70/experiment1/all_data/raw"
+info: "/Users/work/Desktop/dataset/anonymized_data/anon_70/info.csv"
+anon_desc: "/Users/work/Desktop/dataset/anonymized_data/anon_70/anon-desc.csv"
