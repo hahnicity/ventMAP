@@ -1,0 +1,3 @@
+patient_dir: "../unanonymized_data/unanon_70/generalization_dataset/experiment1/all_data/raw/*/"
+new_dir: "../anonymized_data/anon_70/experiment1/all_data/raw"
+info: "../anonymized_data/anon_70/info.csv"

@@ -177,7 +177,6 @@ def main():
     parser.add_argument('--only-shift-date', action='store_true', help='only shift the date of the filename and not the patient. Helpful in cases where the patient name is already anonymized')
     args = parser.parse_args()
     
-    print(" Start anonymizaton ... ")
     match = re.search(patient_pattern, args.patient_dir)
     if args.only_shift_date:
         patient = None
