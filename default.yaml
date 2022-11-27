@@ -1,3 +1,2 @@
-anon_data_path: ""       #anon_data_path is the path to your anonymized dataset e.g. /dataset/
-raw_patient_dir: ""      #raw_patient_dir is the path to your unanonymized raw data directory e.g. /dataset/experiment/all_data/raw/*/ , remember to add /*/ 
-new_dir: ""              #new_dir is the path to your anonymized raw data directory e.g. /dataset/experiment/all_data/raw
+anon_data_path:        #anon_data_path is the path to your anonymized dataset e.g. /dataset/
+raw_patient_dir:       #raw_patient_dir is the path to your unanonymized raw data directory e.g. /dataset/experiment/all_data/raw/*/ , remember to add /*/ 

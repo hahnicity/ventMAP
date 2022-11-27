@@ -2,17 +2,16 @@
 # Please specify patient_directory and the place you want to store info.csv before you run the script in default.yaml
 
 raw_patient_dir="${RAW_PATIENT_DIR:-$(yq ".raw_patient_dir" default.yaml)}" 
-new_dir="${NEW_DIR:-$(yq ".new_dir" default.yaml)}" 
 data_path="${ANON_DATA_PATH:-$(yq ".anon_data_path" default.yaml)}" 
 
-export raw_patient_dir new_dir data_path
+export raw_patient_dir data_path
 
 anonymize_rawdata(){
     echo "Start anonymizing raw data ..."
     for dir in ${raw_patient_dir}; do
         # Preprocessing file from each patient directories and then anonymize data
 	python ventmap/validate_data_type.py $dir
-	python ventmap/anonymize_datatimes.py $dir --new-cohort-file $data_path/info.csv --new-dir $new_dir
+	python ventmap/anonymize_datatimes.py $dir --new-cohort-file $data_path/info.csv --new-dir $data_path/experiment1/all_data/raw
     done
 
     echo "Anonymization on raw data finished !!"
