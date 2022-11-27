@@ -8,7 +8,7 @@ to shift the patient files by.
 
 Shift file should take CSV format and look like
 
-patient,shift_hours,new_patient_id
+patient_id,shift_hours,new_patient_id
 XXXXRPIXXXXXXXXXX,100000,1314
 ...
 
@@ -34,7 +34,7 @@ old_file_date_pattern = re.compile(r'(\d{4}-\d{2}-\d{2}__\d{2}:\d{2}:\d{2}.\d{9}
 text_date_pattern = re.compile(r'(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}.\d{6})')
 three_col_regex_search_pattern = re.compile(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{6})')
 file_date_pattern = text_date_pattern
-patient_pattern = r'(\w{4}RPI\w{10}[-_]?\d?)'
+patient_pattern = r'(\w{4}RPI\w{2})'
 old_file_datetime_time_pattern = '%Y-%m-%d__%H:%M:%S.%f'
 regular_datetime_time_pattern = '%Y-%m-%d-%H-%M-%S.%f'
 three_col_datetime_pattern = '%Y-%m-%d %H:%M:%S.%f'
@@ -176,7 +176,7 @@ def main():
     parser.add_argument('--new-dir', help='specify a new directory path to save patient data. If not specified then script will save data into 1 level above where patient directory is located')
     parser.add_argument('--only-shift-date', action='store_true', help='only shift the date of the filename and not the patient. Helpful in cases where the patient name is already anonymized')
     args = parser.parse_args()
-
+    
     match = re.search(patient_pattern, args.patient_dir)
     if args.only_shift_date:
         patient = None
@@ -194,7 +194,7 @@ def main():
     elif args.shift_file:
         new_patient_id = randint(0, max_patient_id)
         shift_data = pd.read_csv(args.shift_file)
-        patient_data = shift_data[shift_data.patient == patient]
+        patient_data = shift_data[shift_data.patient_id == patient]
         if len(patient_data) != 1:
             raise NoPatientError('patient {} not found in shift file, or may be duplicated'.format(patient))
         shift_hours = patient_data.iloc[0].shift_hours

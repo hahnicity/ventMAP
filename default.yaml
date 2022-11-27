@@ -1,0 +1,3 @@
+anon_data_path: "/Users/work/Desktop/dataset/anonymized_data/anon_70"
+raw_patient_dir: "/Users/work/Desktop/dataset/unanonymized_data/unanon_70/generalization_dataset/experiment1/all_data/raw/*/"
+new_dir: "/Users/work/Desktop/dataset/anonymized_data/anon_70/experiment1/all_data/raw"
