@@ -8,7 +8,7 @@ to shift the patient files by.
 
 Shift file should take CSV format and look like
 
-patient,shift_hours,new_patient_id
+patient_id,shift_hours,new_patient_id
 XXXXRPIXXXXXXXXXX,100000,1314
 ...
 
@@ -194,7 +194,7 @@ def main():
     elif args.shift_file:
         new_patient_id = randint(0, max_patient_id)
         shift_data = pd.read_csv(args.shift_file)
-        patient_data = shift_data[shift_data.patient == patient]
+        patient_data = shift_data[shift_data.patient_id == patient]
         if len(patient_data) != 1:
             raise NoPatientError('patient {} not found in shift file, or may be duplicated'.format(patient))
         shift_hours = patient_data.iloc[0].shift_hours

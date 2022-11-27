@@ -15,6 +15,7 @@ The goal is to make entire data preprocessing more easier and safer
 	# make sure you specify your data source in default.yaml
 
 	# simply run the shell script, and let the script work for you
-	sh build_cohort.sh
+	
+	sh ../build_cohort.sh
 
 
