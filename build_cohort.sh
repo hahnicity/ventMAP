@@ -33,7 +33,7 @@ conda_activate(){
 
 baseline(){
     echo "Preprocessed dataset and run baseline ..."    
-    python train.py -dp $data_path --cohort-description $data_path/anon-desc.csv --to-pickle 70_processed_dataset.pkl
+    python train.py -dp $data_path --cohort-description $data_path/anon-desc.csv --to-pickle processed_dataset.pkl
     echo "Preprocessing dataset finished !!"
 }
 
