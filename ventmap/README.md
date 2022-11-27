@@ -3,13 +3,13 @@ vemtMAP software also provide you with data anonymization to avoid PHI
 
 ## Motiviation
 
-The goal is to make entire data preprocessing more easier and safer
+The goal is to make entire data preprocessing more easier and safer. 
 
 ## Things that script does
 
- 1. anonymize patient id and offshift datetime 
- 2. update cohort description file to align with raw data
- 3. run baseline machine learning model (Need to clone ccil_vwd repo first)
+ 1. Anonymize patient id and offshift datetime from raw data you transfer from the database 
+ 2. Update cohort description file to align with raw data after anonymization
+ 3. Run baseline machine learning model (Need to clone ccil_vwd repo before you do this !) 
 
 
 ## Quick start
@@ -19,10 +19,9 @@ The goal is to make entire data preprocessing more easier and safer
 	# make sure you install yq on your machine
 	brew install yq 
 
-	# make sure you specify your data source in default.yaml
+	# specify your data source in default.yaml
 
 	# simply run the shell script, and let the script work for you
-	
-	sh ../build_cohort.sh
+		sh ../build_cohort.sh
 
 
