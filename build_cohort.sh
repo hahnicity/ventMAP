@@ -18,7 +18,7 @@ anonymize_rawdata(){
     echo "Anonymization on raw data finished !!"
 }
 
-update_cohort_description (){
+update_cohort_description(){
     echo "Update cohort description ..."
     python ventmap/redo_cohort_desc_after_anonymization.py --shift-file $data_path/info.csv --non-anon-cohort-desc $data_path/anon-desc.csv
     echo "Update cohort description finished !!"
