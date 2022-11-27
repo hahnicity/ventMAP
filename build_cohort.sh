@@ -20,7 +20,7 @@ anonymize_rawdata(){
 
 update_cohort_description (){
     echo "Update cohort description ..."
-    python $HOME/Desktop/deepards/deepards/redo_cohort_desc_after_anonymization.py --shift-file $data_path/info.csv --non-anon-cohort-desc $data_path/anon_desc.csv
+    python ventmap/redo_cohort_desc_after_anonymization.py --shift-file $data_path/info.csv --non-anon-cohort-desc $data_path/anon-desc.csv
     echo "Update cohort description finished !!"
 
 }
