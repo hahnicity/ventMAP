@@ -7,9 +7,9 @@ The goal is to make entire data preprocessing more easier and safer.
 
 ## Things that script does
 
- 1. Anonymize patient id and offshift datetime from raw data you transfer from the database 
+ 1. Anonymize patient id and shift datetime from raw data you transfer from the database 
  2. Update cohort description file to align with raw data after anonymization
- 3. Run baseline machine learning model (Need to clone ccil_vwd repo before you do this !) 
+ 3. Run baseline machine learning model (Need to clone ardsdetection repo before you do this ! ) [public ardsdetection repo](https://github.com/hahnicity/ardsdetection) 
 
 
 ## Quick start
